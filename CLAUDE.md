@@ -38,7 +38,7 @@ If an issue is labeled `epic`, it hasn't been detailed yet — break it into con
 ## Project structure
 
 - `game/` — the Godot project (kept separate from repo-root docs/planning). See `README.md` for the full folder breakdown and how to open/run/export it.
-- `docs/` — `PROJECT_VISION.md`, `DECISIONS.md`, `deployment.md` today. `ART_BIBLE.md` (M2) and `WORLD_BIBLE.md` (as setting/story get decided) will join these. Don't assume other documents exist beyond what's actually there.
+- `docs/` — `PROJECT_VISION.md`, `DECISIONS.md`, `deployment.md`, `ART_BIBLE.md` today. `WORLD_BIBLE.md` (as setting/story get decided) will join these. Don't assume other documents exist beyond what's actually there.
 
 ## Maintaining documentation
 

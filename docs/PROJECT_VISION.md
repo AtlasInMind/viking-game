@@ -23,7 +23,7 @@ A strong publishable demo is realistically a few months of steady part-time work
 ## Design pillars
 
 1. **Exploration first** — the world rewards curiosity; secrets, vistas, and small stories everywhere.
-2. **Premium, cohesive pixel art** — consistency (palette, grid, lighting, proportion) enforced by tooling, not vibes. Art is the stated top priority of the project. A believable, hand-crafted *feel* even though art is procedurally generated — see `docs/ART_BIBLE.md` (created in M2).
+2. **Premium, cohesive pixel art** — consistency (palette, grid, lighting, proportion) enforced by tooling, not vibes. Art is the stated top priority of the project. A believable, hand-crafted *feel* even though art is procedurally generated — see `docs/ART_BIBLE.md`.
 3. **Grounded, mythic atmosphere** — a real Viking-Age texture; myth lives as belief, never confirmed. See "Relationship to norse-game."
 4. **Quality over quantity** — a smaller world that feels intentional beats a large one that feels generated.
 
