@@ -13,16 +13,66 @@ const TILE_PATH := 2
 const TILE_TREE := 3
 const TILE_WATER := 4
 
+const NPC_SCENE := preload("res://scenes/npc.tscn")
+
+## Placeholder NPCs for M1's vertical slice - grid cells chosen to sit on the
+## path near the player's start so they're immediately reachable.
+const NPC_PLACEMENTS := [
+	{"cell": Vector2i(22, 12), "facing": "down", "text": "The path north leads up toward the old cairn, if the weather holds."},
+	{"cell": Vector2i(20, 10), "facing": "down", "text": "Careful near the water after dark. My grandmother never let us go near it then."},
+]
+
 @onready var _ground: TileMapLayer = $Ground
 @onready var _player: Node2D = $Player
+@onready var _dialogue: DialogueBox = $UI/DialogueBox
+
+var _occupied_cells: Dictionary = {}
+var _interact_was_pressed := false
 
 
 func _ready() -> void:
 	var source_id := _build_tileset()
 	_build_map(source_id)
+	_place_npcs()
 
 	var start := Vector2i(MAP_SIZE.x / 2, MAP_SIZE.y / 2)
-	_player.initialize(_ground, start, TILE_SIZE, MAP_SIZE)
+	_player.initialize(_ground, start, TILE_SIZE, MAP_SIZE, _occupied_cells)
+
+
+func _process(_delta: float) -> void:
+	var interact_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
+	var just_pressed := interact_pressed and not _interact_was_pressed
+	_interact_was_pressed = interact_pressed
+	if not just_pressed:
+		return
+
+	if _dialogue.is_open():
+		_dialogue.close()
+		_player.set_input_enabled(true)
+		return
+
+	if _player.is_moving():
+		return
+
+	var target: Vector2i = _player.get_grid_pos() + _player.get_facing_direction()
+	var npc: Variant = _occupied_cells.get(target)
+	if npc and npc.has_method("get_dialogue_text"):
+		_dialogue.open(npc.get_dialogue_text())
+		_player.set_input_enabled(false)
+
+
+func _place_npcs() -> void:
+	for placement in NPC_PLACEMENTS:
+		var npc := NPC_SCENE.instantiate()
+		add_child(npc)
+		npc.facing = placement["facing"]
+		npc.dialogue_text = placement["text"]
+		npc.position = _grid_to_world(placement["cell"])
+		_occupied_cells[placement["cell"]] = npc
+
+
+func _grid_to_world(cell: Vector2i) -> Vector2:
+	return Vector2(cell.x * TILE_SIZE + TILE_SIZE / 2.0, cell.y * TILE_SIZE + TILE_SIZE)
 
 
 func _build_tileset() -> int:

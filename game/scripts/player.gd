@@ -11,15 +11,21 @@ const MOVE_TIME := 0.14
 
 var _tile_size := 16
 var _ground: TileMapLayer
+var _occupied_cells: Dictionary
 var _grid_pos := Vector2i.ZERO
 var _moving := false
 var _facing := "down"
 var _facing_right := true
 var _step_frame := 0
+var _input_enabled := true
 
 
-func initialize(ground: TileMapLayer, start_grid_pos: Vector2i, tile_size: int, map_size: Vector2i) -> void:
+## occupied_cells maps Vector2i -> entity (e.g. an Npc) for cells blocked by
+## something other than terrain. It's read live (not copied), so entities
+## registered into it after initialize() still block correctly.
+func initialize(ground: TileMapLayer, start_grid_pos: Vector2i, tile_size: int, map_size: Vector2i, occupied_cells: Dictionary) -> void:
 	_ground = ground
+	_occupied_cells = occupied_cells
 	_tile_size = tile_size
 	_grid_pos = start_grid_pos
 	position = _grid_to_world(_grid_pos)
@@ -33,8 +39,33 @@ func initialize(ground: TileMapLayer, start_grid_pos: Vector2i, tile_size: int, 
 	_update_sprite_frame()
 
 
+func get_grid_pos() -> Vector2i:
+	return _grid_pos
+
+
+func get_facing_direction() -> Vector2i:
+	match _facing:
+		"up":
+			return Vector2i.UP
+		"side":
+			return Vector2i.RIGHT if _facing_right else Vector2i.LEFT
+		_:
+			return Vector2i.DOWN
+
+
+func is_moving() -> bool:
+	return _moving
+
+
+func set_input_enabled(enabled: bool) -> void:
+	_input_enabled = enabled
+	if not enabled:
+		_step_frame = 0
+		_update_sprite_frame()
+
+
 func _process(_delta: float) -> void:
-	if _ground == null or _moving:
+	if _ground == null or _moving or not _input_enabled:
 		return
 
 	var direction := _read_direction()
@@ -81,6 +112,8 @@ func _face(direction: Vector2i) -> void:
 
 
 func _is_blocked(cell: Vector2i) -> bool:
+	if _occupied_cells.has(cell):
+		return true
 	var data := _ground.get_cell_tile_data(cell)
 	if data == null:
 		return true
