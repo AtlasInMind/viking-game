@@ -6,6 +6,8 @@ extends Node2D
 
 const MOVE_TIME := 0.14
 
+signal moved(grid_pos: Vector2i)
+
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _camera: Camera2D = $Camera2D
 
@@ -127,6 +129,7 @@ func _move_to(target: Vector2i) -> void:
 	tween.finished.connect(func() -> void:
 		_grid_pos = target
 		_moving = false
+		moved.emit(_grid_pos)
 	)
 
 

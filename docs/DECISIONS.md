@@ -10,6 +10,14 @@ Chronological log of significant project decisions, with rationale, consequences
 
 ---
 
+### 2026-07-25 — Web save persistence: no manual FS.syncfs() call needed on this Godot version
+
+**Rationale:** Godot's web export historically needed a manual JavaScript `FS.syncfs()` call (via `JavaScriptBridge.eval`) to flush `user://` writes from the in-memory IDBFS to the browser's real IndexedDB before a page reload — issue #3 was written expecting this. It was implemented first, then tested against the actual exported web build with a real Playwright-driven page reload (not just the Godot editor). That call threw `ReferenceError: FS is not defined` — on this project's Godot 4.7, that global isn't reachable from `JavaScriptBridge.eval`'s context; it's wrapped inside the engine's internal `GodotFS`/`godot_js_os_fs_sync` binding instead. The manual sync call was then removed entirely and the same real-browser-reload test was re-run: the save persisted correctly with no manual sync code at all, meaning `FileAccess.close()` already handles this internally on web in this Godot version.
+**Consequences:** `game/scripts/save_system.gd` has no web-specific sync code — `save_game()`/`load_game()` are plain `FileAccess` calls that work identically across platforms. If save persistence ever appears to silently fail on web again (e.g. after a Godot version upgrade), re-verify this specifically against a real browser reload of the exported build before assuming a manual sync call is the fix — don't re-add the old `FS.syncfs()` approach blind, since the global isn't even valid in this version's export.
+**Status:** final for Godot 4.7; revisit if the Godot version changes.
+
+---
+
 ### 2026-07-25 — Genre and scope: Pokemon-scale exploration/story RPG, not creature-collection
 
 **Rationale:** User direction — the game should match a mainline Pokemon game in *size and length* of gameplay, but the actual draw is exploration/atmosphere/story rather than monster-collecting or battling. Confirmed explicitly when offered "creature-collection RPG" vs. "viking party/companion RPG" vs. "exploration/story RPG" as options.

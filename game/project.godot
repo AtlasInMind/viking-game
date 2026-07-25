@@ -15,6 +15,10 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 run/main_scene="res://scenes/title_screen.tscn"
 config/icon="res://icon.png"
 
+[autoload]
+
+SaveSystem="*res://scripts/save_system.gd"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

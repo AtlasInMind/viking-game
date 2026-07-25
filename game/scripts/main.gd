@@ -35,8 +35,40 @@ func _ready() -> void:
 	_build_map(source_id)
 	_place_npcs()
 
-	var start := Vector2i(MAP_SIZE.x / 2, MAP_SIZE.y / 2)
+	var start := _resolve_start_position()
 	_player.initialize(_ground, start, TILE_SIZE, MAP_SIZE, _occupied_cells)
+	_player.moved.connect(_on_player_moved)
+
+
+## Continue (see title_screen.gd) sets SaveSystem.pending_load before
+## changing to this scene; Start leaves it false, so a fresh game never
+## needs the player to manually clear a save. The flag is consumed here
+## (reset to false) so it can't leak into a later session.
+func _resolve_start_position() -> Vector2i:
+	var default_start := Vector2i(MAP_SIZE.x / 2, MAP_SIZE.y / 2)
+	if not SaveSystem.pending_load:
+		return default_start
+
+	SaveSystem.pending_load = false
+	var data := SaveSystem.load_game()
+	if not (data.has("player_x") and data.has("player_y")):
+		return default_start
+	if not ((data["player_x"] is int or data["player_x"] is float) and (data["player_y"] is int or data["player_y"] is float)):
+		return default_start
+
+	var loaded := Vector2i(int(data["player_x"]), int(data["player_y"]))
+	if loaded.x < 0 or loaded.y < 0 or loaded.x >= MAP_SIZE.x or loaded.y >= MAP_SIZE.y:
+		return default_start
+	if _occupied_cells.has(loaded):
+		return default_start
+	var tile_data := _ground.get_cell_tile_data(loaded)
+	if tile_data == null or tile_data.get_custom_data("blocked"):
+		return default_start
+	return loaded
+
+
+func _on_player_moved(grid_pos: Vector2i) -> void:
+	SaveSystem.save_game({"player_x": grid_pos.x, "player_y": grid_pos.y})
 
 
 func _process(_delta: float) -> void:
