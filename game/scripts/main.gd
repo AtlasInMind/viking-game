@@ -15,11 +15,19 @@ const TILE_WATER := 4
 
 const NPC_SCENE := preload("res://scenes/npc.tscn")
 
+## World-state flag demonstrating cross-system reactivity (issue #8): set
+## when the player first asks the cairn NPC about the cairn, checked by the
+## water NPC's dialogue - a flag changing behavior somewhere else entirely,
+## not just an NPC remembering its own conversation.
+const FLAG_ASKED_ABOUT_CAIRN := "asked_about_cairn"
+const WATER_NPC_DEFAULT_TEXT := "Careful near the water after dark. My grandmother never let us go near it then."
+const WATER_NPC_FOLLOWUP_TEXT := "Asking about the cairn again? Some say lights move up there at night."
+
 ## Placeholder NPCs for M1's vertical slice - grid cells chosen to sit on the
 ## path near the player's start so they're immediately reachable.
 const NPC_PLACEMENTS := [
-	{"cell": Vector2i(22, 12), "facing": "down", "text": "The path north leads up toward the old cairn, if the weather holds."},
-	{"cell": Vector2i(20, 10), "facing": "down", "text": "Careful near the water after dark. My grandmother never let us go near it then."},
+	{"id": "cairn_npc", "cell": Vector2i(22, 12), "facing": "down", "text": "The path north leads up toward the old cairn, if the weather holds."},
+	{"id": "water_npc", "cell": Vector2i(20, 10), "facing": "down", "text": WATER_NPC_DEFAULT_TEXT},
 ]
 
 @onready var _ground: TileMapLayer = $Ground
@@ -27,30 +35,43 @@ const NPC_PLACEMENTS := [
 @onready var _dialogue: DialogueBox = $UI/DialogueBox
 
 var _occupied_cells: Dictionary = {}
+var _npcs_by_id: Dictionary = {}
 var _interact_was_pressed := false
 
 
 func _ready() -> void:
+	# Load save data (and restore WorldState from it) before placing NPCs,
+	# so a continued game's NPCs reflect prior flag state from their very
+	# first frame instead of only updating reactively on the next change.
+	var save_data := _load_save_if_continuing()
+
 	var source_id := _build_tileset()
 	_build_map(source_id)
 	_place_npcs()
 
-	var start := _resolve_start_position()
+	var start := _resolve_start_position(save_data)
 	_player.initialize(_ground, start, TILE_SIZE, MAP_SIZE, _occupied_cells)
 	_player.moved.connect(_on_player_moved)
+	WorldState.flag_changed.connect(_on_flag_changed)
 
 
 ## Continue (see title_screen.gd) sets SaveSystem.pending_load before
-## changing to this scene; Start leaves it false, so a fresh game never
-## needs the player to manually clear a save. The flag is consumed here
-## (reset to false) so it can't leak into a later session.
-func _resolve_start_position() -> Vector2i:
-	var default_start := Vector2i(MAP_SIZE.x / 2, MAP_SIZE.y / 2)
+## changing to this scene; Start leaves it false (and clears WorldState
+## itself), so a fresh game never needs the player to manually clear a
+## save. The flag is consumed here (reset to false) so it can't leak into
+## a later session.
+func _load_save_if_continuing() -> Dictionary:
 	if not SaveSystem.pending_load:
-		return default_start
-
+		return {}
 	SaveSystem.pending_load = false
 	var data := SaveSystem.load_game()
+	if data.has("flags") and data["flags"] is Dictionary:
+		WorldState.from_dict(data["flags"])
+	return data
+
+
+func _resolve_start_position(data: Dictionary) -> Vector2i:
+	var default_start := Vector2i(MAP_SIZE.x / 2, MAP_SIZE.y / 2)
 	if not (data.has("player_x") and data.has("player_y")):
 		return default_start
 	if not ((data["player_x"] is int or data["player_x"] is float) and (data["player_y"] is int or data["player_y"] is float)):
@@ -67,8 +88,30 @@ func _resolve_start_position() -> Vector2i:
 	return loaded
 
 
-func _on_player_moved(grid_pos: Vector2i) -> void:
-	SaveSystem.save_game({"player_x": grid_pos.x, "player_y": grid_pos.y})
+func _on_player_moved(_grid_pos: Vector2i) -> void:
+	_save_state()
+
+
+## Any flag change gets persisted immediately, not just on movement -
+## talking to an NPC doesn't require the player to also take a step before
+## the resulting state change survives a reload.
+func _on_flag_changed(flag: String, value: Variant) -> void:
+	if flag == FLAG_ASKED_ABOUT_CAIRN and value:
+		var water_npc: Variant = _npcs_by_id.get("water_npc")
+		if water_npc:
+			water_npc.dialogue_text = WATER_NPC_FOLLOWUP_TEXT
+	_save_state()
+
+
+## Load-merge-save rather than overwrite, so this and the position-save in
+## _on_player_moved() don't clobber each other's fields (see the note on
+## SaveSystem.save_game()).
+func _save_state() -> void:
+	var data := SaveSystem.load_game()
+	data["player_x"] = _player.get_grid_pos().x
+	data["player_y"] = _player.get_grid_pos().y
+	data["flags"] = WorldState.to_dict()
+	SaveSystem.save_game(data)
 
 
 func _process(_delta: float) -> void:
@@ -91,6 +134,8 @@ func _process(_delta: float) -> void:
 	if npc and npc.has_method("get_dialogue_text"):
 		_dialogue.open(npc.get_dialogue_text())
 		_player.set_input_enabled(false)
+		if npc == _npcs_by_id.get("cairn_npc"):
+			WorldState.set_flag(FLAG_ASKED_ABOUT_CAIRN, true)
 
 
 func _place_npcs() -> void:
@@ -101,6 +146,15 @@ func _place_npcs() -> void:
 		npc.dialogue_text = placement["text"]
 		npc.position = _grid_to_world(placement["cell"])
 		_occupied_cells[placement["cell"]] = npc
+		_npcs_by_id[placement["id"]] = npc
+
+	# Reflect already-loaded WorldState (e.g. from a continued save)
+	# immediately, rather than waiting for a flag_changed signal that won't
+	# fire for state that was bulk-restored via WorldState.from_dict().
+	if WorldState.get_flag(FLAG_ASKED_ABOUT_CAIRN):
+		var water_npc: Variant = _npcs_by_id.get("water_npc")
+		if water_npc:
+			water_npc.dialogue_text = WATER_NPC_FOLLOWUP_TEXT
 
 
 func _grid_to_world(cell: Vector2i) -> Vector2:
