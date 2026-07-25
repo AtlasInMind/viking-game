@@ -23,7 +23,7 @@ A strong publishable demo is realistically a few months of steady part-time work
 ## Design pillars
 
 1. **Exploration first** — the world rewards curiosity; secrets, vistas, and small stories everywhere.
-2. **Premium, cohesive pixel art** — consistency (palette, grid, lighting, proportion) enforced by tooling, not vibes. Art is the stated top priority of the project. A believable, hand-crafted *feel* even where art is AI-assisted — see `docs/ART_BIBLE.md` (created in M2).
+2. **Premium, cohesive pixel art** — consistency (palette, grid, lighting, proportion) enforced by tooling, not vibes. Art is the stated top priority of the project. A believable, hand-crafted *feel* even though art is procedurally generated — see `docs/ART_BIBLE.md` (created in M2).
 3. **Grounded, mythic atmosphere** — a real Viking-Age texture; myth lives as belief, never confirmed. See "Relationship to norse-game."
 4. **Quality over quantity** — a smaller world that feels intentional beats a large one that feels generated.
 
@@ -57,7 +57,7 @@ Full detail per milestone, including concrete scope, lives on the GitHub milesto
 Prove all the pillars in one hand-crafted region, built data-driven so it scales later: title screen, save/load (verified against a real browser reload — the classic web-export gotcha), data-driven NPC + dialogue system, a quest/flag/world-state system as the backbone all content hangs on, one authored map (replacing the current procedural placeholder), and a first working version of the light challenge mechanic. Art for this slice should be at target quality so "premium" becomes concrete, not aspirational.
 
 ### M2 — Art bible + production pipeline
-The single most important milestone given the project's stated priority. Produces `docs/ART_BIBLE.md` (palette, resolution, proportions, tile-grid rules, UI style) and a scripted pipeline (AI-generate → hand-polish → palette-clamp/consistency-validate → import), extending the Pillow tooling already used for the M0 placeholder art. Hero/signature art is hand-finished; tiles/props/filler go through the pipeline. Exit: the M1 slice re-skinned through this pipeline and reading as one cohesive world.
+The single most important milestone given the project's stated priority. Art here is **procedural** (Python/Pillow-generated), not AI-generated as originally planned — there's no image-generation tool available in this environment, so the M0/M1 placeholder art was already produced this way; M2 invests further in that approach rather than replacing it (see `docs/DECISIONS.md` "Art production, revised"). Produces `docs/ART_BIBLE.md` (palette, resolution, proportions, lighting/shading rules, tile-grid rules, UI style) and a substantially deeper procedural pipeline (palette discipline, shading, silhouette detail, consistency validation), extending the Pillow tooling already used for M0/M1. Hero/signature art gets hand-tuned parameters and more iteration; tiles/props/filler go through more templated generation. Exit: the M1 slice re-skinned through this pipeline and reading as one cohesive world.
 
 ### M3 — Publishable demo (Act 1)
 M1 expanded into a self-contained 1–2h story arc, released publicly (itch.io + web) with a devlog started. Needs inventory/items and progression gating (item/ability/story-flag gates — the "HM" equivalent) on top of M1's systems.
@@ -85,9 +85,9 @@ Deliberately open — don't invent and treat as established:
 
 ## Key risks & mitigations
 
-- **Art consistency at scale** (top risk, given AI+cleanup as the method) → art bible + tooling-enforced palette/grid + hand-polished hero assets + an art-direction pass on every batch (M2).
+- **Art consistency at scale** (top risk, given procedural generation as the method) → art bible + tooling-enforced palette/grid + hand-tuned hero assets + an art-direction pass on every batch (M2).
 - **Solo scope / burnout** → every milestone independently valuable and shippable; content shipped in acts; demo out early (M3) for motivation and feedback.
-- **AI-art "sameness"/uncanny quality** → curate hard, redraw key frames by hand, never ship raw generations unreviewed.
+- **Procedural art hitting a craft ceiling** (a trained illustrator's judgment isn't procedurally reproducible) → an art bible enforcing deliberate palette/shading/proportion choices, iteration/reference-driven parameter tuning rather than shipping first-pass output, hero assets getting disproportionate attention.
 - **Web payload growth for a long game** → strict asset budgets, atlasing, per-region lazy-loading, optional desktop build (M4).
 - **"Pokemon-length" expectation vs. solo reality** → explicit north-star-vs-first-publishable framing (this document); track progress by shippable acts, not distance from a 40-hour ideal.
 
