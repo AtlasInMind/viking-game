@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
 [ext_resource type="Script" path="res://scripts/dialogue_box.gd" id="3_dialogue"]
 [ext_resource type="PackedScene" path="res://scenes/cairn_encounter.tscn" id="4_cairn_encounter"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/dialogue_open.wav" id="5_dialogue_open_sfx"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogue"]
 bg_color = Color(0.078, 0.067, 0.055, 0.94)
@@ -49,6 +50,9 @@ offset_right = -8.0
 offset_bottom = -8.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_dialogue")
 script = ExtResource("3_dialogue")
+
+[node name="SFX" type="AudioStreamPlayer" parent="UI/DialogueBox"]
+stream = ExtResource("5_dialogue_open_sfx")
 
 [node name="Label" type="Label" parent="UI/DialogueBox"]
 anchor_left = 0.0

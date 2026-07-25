@@ -59,6 +59,8 @@ Prove all the pillars in one hand-crafted region, built data-driven so it scales
 ### M2 — Art bible + production pipeline
 The single most important milestone given the project's stated priority. Art here is **procedural** (Python/Pillow-generated), not AI-generated as originally planned — there's no image-generation tool available in this environment, so the M0/M1 placeholder art was already produced this way; M2 invests further in that approach rather than replacing it (see `docs/DECISIONS.md` "Art production, revised"). Produces `docs/ART_BIBLE.md` (palette, resolution, proportions, lighting/shading rules, tile-grid rules, UI style) and a substantially deeper procedural pipeline (palette discipline, shading, silhouette detail, consistency validation), extending the Pillow tooling already used for M0/M1. Hero/signature art gets hand-tuned parameters and more iteration; tiles/props/filler go through more templated generation. Exit: the M1 slice re-skinned through this pipeline and reading as one cohesive world.
 
+Audio follows the same logic: also **procedural** (Python/numpy-synthesized SFX, e.g. the dialogue-open chime), not AI-generated or externally sourced, for the same reason — see `docs/DECISIONS.md` ("Audio production: procedural synthesis, following the art precedent"). Expected to stay SFX/ambience-focused rather than deliver a full musical score.
+
 ### M3 — Publishable demo (Act 1)
 M1 expanded into a self-contained 1–2h story arc, released publicly (itch.io + web) with a devlog started. Needs inventory/items and progression gating (item/ability/story-flag gates — the "HM" equivalent) on top of M1's systems.
 

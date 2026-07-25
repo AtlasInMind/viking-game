@@ -38,3 +38,7 @@ This is a manual process, not yet automated via GitHub Actions — worth revisit
 ## Last verified
 
 2026-07-25 — live URL loads, playable (movement/collision/camera confirmed via a scripted Playwright pass), zero console errors.
+
+## Known issue: release export has no audio output (2026-07-26)
+
+Verifying issue #14's audio direction found that the `--export-release` build produced by the redeploy steps above plays **no audio at all** — confirmed with a minimal isolated test scene, in both headless and a real headed Chromium window, with zero console/page errors (the failure is silent). The `--export-debug` export of the identical scene/asset plays audio correctly. See `docs/DECISIONS.md`'s audio-decision addendum (2026-07-26) for the full investigation and its resemblance to the open upstream bug `godotengine/godot#119026`. Until this is root-caused or fixed upstream, **any audio shipped via this deploy process will be silent for real players** — this is not specific to one sound effect. Re-check this whenever the Godot version used for export changes.
