@@ -2,11 +2,19 @@
 
 ## Project overview
 
-A top-down 2D exploration RPG for the browser, built in Godot with GDScript, in the spirit of GBA-era Pokemon games: grid-based overworld movement, tile-based maps, readable pixel art, simple systems that read clearly at a glance. **Primary platform is web (browser)**; Android/iOS are possible later exports from the same codebase, not prioritized yet.
+A **Pokemon-scale exploration/story RPG** for the browser, built in Godot with GDScript: grid-based overworld movement, tile-based maps, readable premium pixel art, a light challenge layer instead of a full battle system. "Pokemon-scale" means *length* (15-25h+ across many regions), not the creature-collection mechanic — see `docs/PROJECT_VISION.md` for the full picture and `docs/DECISIONS.md` for how these calls were made. **Primary platform is web (browser)**; a desktop build and mobile ports are open decisions for later milestones, not commitments — see `docs/PROJECT_VISION.md`.
 
-Creative direction (world, story, characters, tone beyond "GBA-style viking adventure") is not yet decided — that's open work, not something to assume from the project name. Don't invent lore/setting details and treat them as established; if a decision is needed to move a task forward, make the smallest reasonable choice and record it, or ask.
+This is a solo project (one developer + AI-assisted engineering) with no cash budget — that constraint shapes the whole roadmap (content shipped in acts, pipelines over bespoke work; see `docs/PROJECT_VISION.md` "The honest scope reality"). Genre, combat approach, art-production method, team/budget, publishing target, and setting/tone are decided (`docs/DECISIONS.md`) — the actual setting, story, and cast are **not**; don't invent lore/setting details and treat them as established. If a decision is needed to move a task forward, make the smallest reasonable choice and record it, or ask.
 
-Placeholder art/audio is expected and fine — the current tileset and character sprite were generated programmatically (see `game/assets/`) purely to make the scaffold playable and demonstrable in a browser. Replace it if/when real art direction is set; don't block gameplay/systems work on having real assets.
+Placeholder art/audio is expected and fine early on — the current tileset and character sprite were generated programmatically (see `game/assets/`) purely to make the scaffold playable and demonstrable in a browser. M2 exists specifically to replace ad-hoc placeholder generation with a real art bible + production pipeline; don't block gameplay/systems work on having final assets before then.
+
+## Documents to read first
+
+1. `docs/PROJECT_VISION.md` — what the project is, the milestone roadmap, and why it's shaped the way it is.
+2. `docs/DECISIONS.md` — decisions made so far, with rationale.
+3. `README.md` — how to open/run/export the project.
+
+Don't rely on prior conversation context or Claude's memory — everything load-bearing should be in `docs/`. If something important is missing there, it hasn't been established yet.
 
 ## Platform and engine
 
@@ -30,9 +38,10 @@ If an issue is labeled `epic`, it hasn't been detailed yet — break it into con
 ## Project structure
 
 - `game/` — the Godot project (kept separate from repo-root docs/planning). See `README.md` for the full folder breakdown and how to open/run/export it.
-- `docs/` — deployment notes and any design/decision docs as they accumulate. Not yet a large corpus; don't assume documents exist that aren't actually there.
+- `docs/` — `PROJECT_VISION.md`, `DECISIONS.md`, `deployment.md` today. `ART_BIBLE.md` (M2) and `WORLD_BIBLE.md` (as setting/story get decided) will join these. Don't assume other documents exist beyond what's actually there.
 
 ## Maintaining documentation
 
-- Non-obvious decisions (technical or creative) go in `docs/DECISIONS.md` (create it when the first decision worth recording comes up) with date, rationale, and consequence.
+- Non-obvious decisions (technical or creative) go in `docs/DECISIONS.md` with date, rationale, and consequence.
+- Keep `docs/PROJECT_VISION.md`'s milestone table in sync with reality as milestones complete or the roadmap changes.
 - Don't overwrite existing, verified content without reason — integrate carefully.
