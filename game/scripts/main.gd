@@ -1,17 +1,39 @@
 extends Node2D
 
 ## Builds a small explorable overworld at runtime (tileset + tilemap) and
-## hands it to the player. Runtime generation avoids hand-authoring the
-## TileMapLayer's packed cell data by hand in a .tscn file.
+## hands it to the player. The tileset itself is still constructed at
+## runtime (see _build_tileset()), but the map layout below (issue #9) is
+## hand-authored - a deliberately placed crossroads village, not algorithmic
+## generation. See docs/DECISIONS.md for why this is authored as named
+## rects/points in code rather than in Tiled or Godot's TileMap editor.
 
 const TILE_SIZE := 16
-const MAP_SIZE := Vector2i(40, 24)
+const MAP_SIZE := Vector2i(30, 18)
 
 const TILE_GRASS := 0
 const TILE_GRASS_FLOWERS := 1
 const TILE_PATH := 2
 const TILE_TREE := 3
 const TILE_WATER := 4
+const TILE_WALL := 5
+const TILE_ROOF := 6
+const TILE_DOOR := 7
+
+## The village crossroads sits at the map's exact center, so the existing
+## default-spawn logic (MAP_SIZE / 2, see _resolve_start_position()) already
+## lands the player on it without duplicating the coordinates.
+const PATH_X := MAP_SIZE.x / 2
+const PATH_Y := MAP_SIZE.y / 2
+
+const HOUSE_A_ROOF := Rect2i(5, 4, 3, 1)
+const HOUSE_A_WALL := Rect2i(5, 5, 3, 1)
+const HOUSE_A_DOOR := Vector2i(6, 5)
+
+const HOUSE_B_ROOF := Rect2i(21, 4, 3, 1)
+const HOUSE_B_WALL := Rect2i(21, 5, 3, 1)
+const HOUSE_B_DOOR := Vector2i(22, 5)
+
+const POND := Rect2i(3, 11, 4, 3)
 
 const NPC_SCENE := preload("res://scenes/npc.tscn")
 
@@ -23,11 +45,13 @@ const FLAG_ASKED_ABOUT_CAIRN := "asked_about_cairn"
 const WATER_NPC_DEFAULT_TEXT := "Careful near the water after dark. My grandmother never let us go near it then."
 const WATER_NPC_FOLLOWUP_TEXT := "Asking about the cairn again? Some say lights move up there at night."
 
-## Placeholder NPCs for M1's vertical slice - grid cells chosen to sit on the
-## path near the player's start so they're immediately reachable.
+## cairn_npc stands north of the crossroads, on the road leading toward the
+## (off-map) cairn; water_npc stands beside the pond - both now placed where
+## their dialogue actually makes sense, unlike the arbitrary path-adjacent
+## spots the procedural map only had room for.
 const NPC_PLACEMENTS := [
-	{"id": "cairn_npc", "cell": Vector2i(22, 12), "facing": "down", "text": "The path north leads up toward the old cairn, if the weather holds."},
-	{"id": "water_npc", "cell": Vector2i(20, 10), "facing": "down", "text": WATER_NPC_DEFAULT_TEXT},
+	{"id": "cairn_npc", "cell": Vector2i(PATH_X, 3), "facing": "down", "text": "The path north leads up toward the old cairn, if the weather holds."},
+	{"id": "water_npc", "cell": Vector2i(7, 12), "facing": "down", "text": WATER_NPC_DEFAULT_TEXT},
 ]
 
 @onready var _ground: TileMapLayer = $Ground
@@ -168,7 +192,7 @@ func _build_tileset() -> int:
 	var atlas := TileSetAtlasSource.new()
 	atlas.texture = load("res://assets/tiles/overworld_tileset.png")
 	atlas.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	for x in range(5):
+	for x in range(8):
 		atlas.create_tile(Vector2i(x, 0))
 
 	tile_set.add_custom_data_layer()
@@ -176,7 +200,11 @@ func _build_tileset() -> int:
 	tile_set.set_custom_data_layer_type(0, TYPE_BOOL)
 
 	var source_id := tile_set.add_source(atlas)
-	for x in [TILE_TREE, TILE_WATER]:
+	# TILE_DOOR is blocked like TILE_WALL deliberately, not by oversight: no
+	# house interiors exist yet, so there's nowhere for walking onto a door
+	# to lead. It's a visual accent marking a future interaction point, not
+	# a passable tile - revisit when interiors/entry are actually built.
+	for x in [TILE_TREE, TILE_WATER, TILE_WALL, TILE_ROOF, TILE_DOOR]:
 		atlas.get_tile_data(Vector2i(x, 0), 0).set_custom_data("blocked", true)
 
 	_ground.tile_set = tile_set
@@ -184,29 +212,31 @@ func _build_tileset() -> int:
 
 
 func _build_map(source_id: int) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1
-
-	var water_rect := Rect2i(3, 3, 7, 5)
-
 	for y in range(MAP_SIZE.y):
 		for x in range(MAP_SIZE.x):
 			var cell := Vector2i(x, y)
-			var atlas_x := TILE_GRASS
+			_ground.set_cell(cell, source_id, Vector2i(_tile_for(cell), 0))
 
-			var on_border := x == 0 or y == 0 or x == MAP_SIZE.x - 1 or y == MAP_SIZE.y - 1
-			var on_path := y == MAP_SIZE.y / 2 or x == MAP_SIZE.x / 2
-			var in_water := water_rect.has_point(cell)
 
-			if on_border:
-				atlas_x = TILE_TREE
-			elif in_water:
-				atlas_x = TILE_WATER
-			elif on_path:
-				atlas_x = TILE_PATH
-			elif rng.randf() < 0.12:
-				atlas_x = TILE_GRASS_FLOWERS
-			elif rng.randf() < 0.03:
-				atlas_x = TILE_TREE
-
-			_ground.set_cell(cell, source_id, Vector2i(atlas_x, 0))
+## Every case here is a deliberate placement (issue #9) - the two houses,
+## the pond, and the crossroads are all named regions above, checked
+## door-before-wall-before-roof since HOUSE_*_DOOR sits inside HOUSE_*_WALL.
+## The only non-fixed choice is which grass variant renders, and that's a
+## deterministic pattern (not randomness) purely for ground texture.
+func _tile_for(cell: Vector2i) -> int:
+	var on_border := cell.x == 0 or cell.y == 0 or cell.x == MAP_SIZE.x - 1 or cell.y == MAP_SIZE.y - 1
+	if on_border:
+		return TILE_TREE
+	if POND.has_point(cell):
+		return TILE_WATER
+	if cell == HOUSE_A_DOOR or cell == HOUSE_B_DOOR:
+		return TILE_DOOR
+	if HOUSE_A_ROOF.has_point(cell) or HOUSE_B_ROOF.has_point(cell):
+		return TILE_ROOF
+	if HOUSE_A_WALL.has_point(cell) or HOUSE_B_WALL.has_point(cell):
+		return TILE_WALL
+	if cell.x == PATH_X or cell.y == PATH_Y:
+		return TILE_PATH
+	if (cell.x + cell.y) % 5 == 0:
+		return TILE_GRASS_FLOWERS
+	return TILE_GRASS

@@ -10,6 +10,14 @@ Chronological log of significant project decisions, with rationale, consequences
 
 ---
 
+### 2026-07-25 — Map authoring tool: named regions in GDScript, not Tiled or Godot's TileMap editor
+
+**Rationale:** Issue #9 explicitly left the tooling choice open ("Tiled... or directly in Godot's TileMap editor, whichever proves faster in practice"). Both assume an interactive GUI (Tiled's application, or Godot's editor's TileMap paint tools); this project is built by an AI coding agent operating headless/CLI-only, with no mouse/window-driven editing available. A third option fits that constraint without adding a new toolchain dependency (Tiled + a Godot Tiled-importer plugin) or needing GUI automation: hand-author the layout as named `Rect2i`/`Vector2i` constants (house footprints, doors, the pond) checked in a fixed priority order in `main.gd::_tile_for()`, still built into the `TileMapLayer` through the same runtime `TileSet`-construction approach the procedural version used. This satisfies the actual distinction issue #9 cares about - hand-placed, deliberate structure vs. algorithmic/random generation - without depending on tooling that can't be driven in this environment.
+**Consequences:** No Tiled `.tmx`/`.tmj` files or importer plugin in this repo. Adding/editing structures means editing named constants and the `_tile_for()` priority chain in `game/scripts/main.gd`, not painting in an external tool. If a human collaborator with editor/GUI access joins later and Tiled or Godot's TileMap editor genuinely becomes faster for authoring larger content, revisit this - the current approach doesn't scale gracefully much past a handful of hand-placed structures.
+**Status:** final for AI-agent-only authoring; revisit if a GUI-capable collaborator takes over map content work.
+
+---
+
 ### 2026-07-25 — Web save persistence: no manual FS.syncfs() call needed on this Godot version
 
 **Rationale:** Godot's web export historically needed a manual JavaScript `FS.syncfs()` call (via `JavaScriptBridge.eval`) to flush `user://` writes from the in-memory IDBFS to the browser's real IndexedDB before a page reload — issue #3 was written expecting this. It was implemented first, then tested against the actual exported web build with a real Playwright-driven page reload (not just the Godot editor). That call threw `ReferenceError: FS is not defined` — on this project's Godot 4.7, that global isn't reachable from `JavaScriptBridge.eval`'s context; it's wrapped inside the engine's internal `GodotFS`/`godot_js_os_fs_sync` binding instead. The manual sync call was then removed entirely and the same real-browser-reload test was re-run: the save persisted correctly with no manual sync code at all, meaning `FileAccess.close()` already handles this internally on web in this Godot version.
