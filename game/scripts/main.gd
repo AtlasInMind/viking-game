@@ -45,17 +45,28 @@ const FLAG_ASKED_ABOUT_CAIRN := "asked_about_cairn"
 const WATER_NPC_DEFAULT_TEXT := "Careful near the water after dark. My grandmother never let us go near it then."
 const WATER_NPC_FOLLOWUP_TEXT := "Asking about the cairn again? Some say lights move up there at night."
 
-## cairn_npc stands north of the crossroads, on the road leading toward the
-## (off-map) cairn; water_npc stands beside the pond - both now placed where
-## their dialogue actually makes sense, unlike the arbitrary path-adjacent
-## spots the procedural map only had room for.
+## cairn_npc stands beside the road (not on it - the road is one tile wide,
+## and issue #10 needs the player able to walk past them to reach the
+## trigger cell further north), facing east toward it. water_npc stands
+## beside the pond. Both placed where their dialogue actually makes sense,
+## unlike the arbitrary path-adjacent spots the procedural map only had
+## room for.
 const NPC_PLACEMENTS := [
-	{"id": "cairn_npc", "cell": Vector2i(PATH_X, 3), "facing": "down", "text": "The path north leads up toward the old cairn, if the weather holds."},
+	{"id": "cairn_npc", "cell": Vector2i(PATH_X - 1, 3), "facing": "side", "text": "The path north leads up toward the old cairn, if the weather holds."},
 	{"id": "water_npc", "cell": Vector2i(7, 12), "facing": "down", "text": WATER_NPC_DEFAULT_TEXT},
 ]
 
+## Challenge-layer prototype (issue #10): stepping onto CAIRN_TRIGGER_CELL,
+## further up the road past cairn_npc, starts the "hold still" encounter;
+## failing pushes the player back to CAIRN_PUSH_BACK_CELL (south of the
+## trigger, clear of cairn_npc and the crossroads) to retry.
+const FLAG_CAIRN_LIGHT_PASSED := "cairn_light_passed"
+const CAIRN_TRIGGER_CELL := Vector2i(PATH_X, 1)
+const CAIRN_PUSH_BACK_CELL := Vector2i(PATH_X, 3)
+
 @onready var _ground: TileMapLayer = $Ground
 @onready var _player: Node2D = $Player
+@onready var _cairn_encounter: Node2D = $CairnEncounter
 @onready var _dialogue: DialogueBox = $UI/DialogueBox
 
 var _occupied_cells: Dictionary = {}
@@ -77,6 +88,10 @@ func _ready() -> void:
 	_player.initialize(_ground, start, TILE_SIZE, MAP_SIZE, _occupied_cells)
 	_player.moved.connect(_on_player_moved)
 	WorldState.flag_changed.connect(_on_flag_changed)
+
+	_cairn_encounter.initialize(_player, CAIRN_TRIGGER_CELL, CAIRN_PUSH_BACK_CELL, WorldState.get_flag(FLAG_CAIRN_LIGHT_PASSED))
+	_cairn_encounter.succeeded.connect(_on_cairn_encounter_succeeded)
+	_cairn_encounter.failed.connect(_on_cairn_encounter_failed)
 
 
 ## Continue (see title_screen.gd) sets SaveSystem.pending_load before
@@ -125,6 +140,17 @@ func _on_flag_changed(flag: String, value: Variant) -> void:
 		if water_npc:
 			water_npc.dialogue_text = WATER_NPC_FOLLOWUP_TEXT
 	_save_state()
+
+
+func _on_cairn_encounter_succeeded() -> void:
+	WorldState.set_flag(FLAG_CAIRN_LIGHT_PASSED, true)
+	_dialogue.open("The light drifts on past the stones. Whatever it was, it didn't seem to mind you.")
+	_player.set_input_enabled(false)
+
+
+func _on_cairn_encounter_failed() -> void:
+	_dialogue.open("You flinch, and the light flares - gone before you can look at it straight. Best to hold still, next time.")
+	_player.set_input_enabled(false)
 
 
 ## Load-merge-save rather than overwrite, so this and the position-save in

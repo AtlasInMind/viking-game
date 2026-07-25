@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/cairn_encounter.gd" id="1_encounter"]
+[ext_resource type="Texture2D" path="res://assets/sprites/wisp.png" id="2_wisp"]
+
+[node name="CairnEncounter" type="Node2D"]
+script = ExtResource("1_encounter")
+
+[node name="Wisp" type="Sprite2D" parent="."]
+texture = ExtResource("2_wisp")
+visible = false

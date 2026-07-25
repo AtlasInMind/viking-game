@@ -133,6 +133,22 @@ func _move_to(target: Vector2i) -> void:
 	)
 
 
+## Forcibly relocates the player (e.g. a challenge-layer "startled, stumbled
+## back" beat) bypassing the normal blocked-check/step-animation path. Still
+## sets _moving during the tween (so normal input can't fight it) and still
+## emits moved() on completion, so autosave and anything else listening
+## stays in sync.
+func force_move_to(cell: Vector2i) -> void:
+	_moving = true
+	var tween := create_tween()
+	tween.tween_property(self, "position", _grid_to_world(cell), MOVE_TIME)
+	tween.finished.connect(func() -> void:
+		_grid_pos = cell
+		_moving = false
+		moved.emit(_grid_pos)
+	)
+
+
 func _grid_to_world(cell: Vector2i) -> Vector2:
 	return Vector2(cell.x * _tile_size + _tile_size / 2.0, cell.y * _tile_size + _tile_size)
 
