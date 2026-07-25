@@ -30,6 +30,7 @@ RAMP_NAME_MAP = {
     "cloth_warm": "cloth_warm",
     "cloth_cool": "cloth_cool",
     "accent": "accent",
+    "brand": "brand",
     "wisp": "wisp",
 }
 

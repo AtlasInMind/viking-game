@@ -83,6 +83,13 @@ ACCENT = {
     "gold_light": (232, 220, 130),
 }
 
+# App icon background only - not used in-world (found missing from the
+# original art bible audit, formalized after the fact).
+BRAND = {
+    "dark": (42, 64, 92),
+    "base": (58, 86, 122),
+}
+
 # Deliberately not part of the grounded-world ramps below - see
 # docs/ART_BIBLE.md's note on why the wisp stays visually "othered".
 WISP = {
@@ -113,6 +120,7 @@ RAMPS = {
     "cloth_warm": CLOTH_WARM,
     "cloth_cool": CLOTH_COOL,
     "accent": ACCENT,
+    "brand": BRAND,
     "wisp": WISP,
     "ui": UI,
 }

@@ -65,6 +65,8 @@ Named ramps, each 2-4 shades (Shadow → Dark → Base → Light, not every ramp
 | | Base | `86, 68, 96` | `#564460` | Pants base *(existing)* |
 | **Accent** | Gold Dark | `206, 178, 96` | `#CEB260` | Doorknob, small metal trim *(existing)* |
 | | Gold Light | `232, 220, 130` | `#E8DC82` | Flower centers *(existing)* |
+| **Brand** (app icon background only - not used in-world) | Dark | `42, 64, 92` | `#2A405C` | Icon circle edge shading (new) |
+| | Base | `58, 86, 122` | `#3A567A` | Icon circle background *(existing - found missing from the original audit, formalized here)* |
 | **Wisp** (VFX, deliberately outside the grounded palette - see below) | Core | `255, 250, 220` | `#FFFADC` | Wisp center *(existing)* |
 | | Mid | `232, 240, 190` | `#E8F0BE` | Wisp glow *(existing)* |
 | | Outer | `214, 232, 170` | `#D6E8AA` | Wisp fringe *(existing)* |
