@@ -45,6 +45,13 @@ func get_grid_pos() -> Vector2i:
 	return _grid_pos
 
 
+## Exposes the camera so a CutscenePlayer can tween its offset (issue #31) -
+## Camera2D stays parented to Player (unchanged), so this is purely for
+## cutscene code to reach the same camera other systems already use.
+func get_camera() -> Camera2D:
+	return _camera
+
+
 func get_facing_direction() -> Vector2i:
 	match _facing:
 		"up":

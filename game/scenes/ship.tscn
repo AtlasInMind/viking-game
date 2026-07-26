@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/cairn_encounter.tscn" id="6_memory_encounter"]
 [ext_resource type="Script" path="res://scripts/journal_ui.gd" id="7_journal"]
 [ext_resource type="Script" path="res://scripts/world_map_ui.gd" id="8_world_map"]
+[ext_resource type="Script" path="res://scripts/cutscene_player.gd" id="9_cutscene"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_inventory"]
 bg_color = Color(0.078, 0.067, 0.055, 0.94)
@@ -29,6 +30,9 @@ script = ExtResource("1_ship")
 [node name="Player" parent="." instance=ExtResource("2_player")]
 
 [node name="MemoryEncounter" parent="." instance=ExtResource("6_memory_encounter")]
+
+[node name="CutscenePlayer" type="Node" parent="."]
+script = ExtResource("9_cutscene")
 
 [node name="UI" type="CanvasLayer" parent="."]
 

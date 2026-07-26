@@ -86,6 +86,7 @@ const MEMORY_PUSH_BACK_CELL := Vector2i(10, 4)
 @onready var _journal_ui: JournalUI = $UI/JournalUI
 @onready var _world_map_ui: WorldMapUI = $UI/WorldMapUI
 @onready var _memory_encounter: Node2D = $MemoryEncounter
+@onready var _cutscene: CutscenePlayer = $CutscenePlayer
 @onready var _hint: Label = $UI/Hint
 
 var _occupied_cells: Dictionary = {}
@@ -133,6 +134,7 @@ func _ready() -> void:
 	_memory_encounter.initialize(_player, MEMORY_TRIGGER_CELL, MEMORY_PUSH_BACK_CELL, WorldState.get_flag(QuestFlags.MEMORY_SURFACED))
 	_memory_encounter.succeeded.connect(_on_memory_encounter_succeeded)
 	_memory_encounter.failed.connect(_on_memory_encounter_failed)
+	_cutscene.initialize(_dialogue, _player.get_camera(), _player, [_inventory_ui, _journal_ui, _world_map_ui])
 
 	_update_hint()
 
@@ -190,10 +192,24 @@ func _update_hint() -> void:
 	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory, J for journal, M for map\n%s" % QuestLog.get_current_objective()
 
 
+## Reworked into a real CutscenePlayer sequence (issue #31) - Act 1's
+## resolution beat depends on QuestFlags.MEMORY_SURFACED (see
+## docs/DECISIONS.md's issue #21 entry), set here as the cutscene's first
+## step so it's live the instant the sequence begins, same as the single
+## set_flag() call this replaces. The camera pans out over the water
+## (Camera2D.offset, not position - see cutscene_player.gd/player.gd's
+## get_camera()) and back, giving the "something surfaced, then receded"
+## beat a beat of its own instead of a single static line - proving the
+## system end-to-end against real Act 1 content, not an unused system.
 func _on_memory_encounter_succeeded() -> void:
-	WorldState.set_flag(QuestFlags.MEMORY_SURFACED, true)
-	_dialogue.open("For a moment you're not sure whose fear that was - yours, or someone else's, still standing on this deck.")
-	_player.set_input_enabled(false)
+	_cutscene.play([
+		{"type": "flag", "flag": QuestFlags.MEMORY_SURFACED, "value": true},
+		{"type": "dialogue", "text": "For a moment you're not sure whose fear that was - yours, or someone else's, still standing on this deck."},
+		{"type": "camera_pan", "offset": Vector2(0, -40), "duration": 1.2},
+		{"type": "wait", "duration": 1.0},
+		{"type": "dialogue", "text": "Nothing moves out there now. But you understand, all at once, why twenty-two people once refused to look."},
+		{"type": "camera_pan", "offset": Vector2.ZERO, "duration": 1.0},
+	])
 
 
 func _on_memory_encounter_failed() -> void:
@@ -254,6 +270,14 @@ func _process_interact() -> void:
 	if not just_pressed or _inventory_ui.is_open() or _journal_ui.is_open() or _world_map_ui.is_open():
 		return
 
+	# Checked before _dialogue.is_open() deliberately - a cutscene's own
+	# "dialogue" steps also open _dialogue, and advancing those must go
+	# through _cutscene.advance() (continue the sequence), not the plain
+	# close-and-reenable-input branch below (issue #31).
+	if _cutscene.is_playing():
+		_cutscene.advance()
+		return
+
 	if _dialogue.is_open():
 		_dialogue.close()
 		_player.set_input_enabled(true)
@@ -275,7 +299,7 @@ func _process_inventory_toggle() -> void:
 	var inventory_key_pressed := Input.is_key_pressed(KEY_I)
 	var just_pressed := inventory_key_pressed and not _inventory_key_was_pressed
 	_inventory_key_was_pressed = inventory_key_pressed
-	if not just_pressed or _dialogue.is_open() or _journal_ui.is_open() or _world_map_ui.is_open():
+	if not just_pressed or _dialogue.is_open() or _journal_ui.is_open() or _world_map_ui.is_open() or _cutscene.is_playing():
 		return
 
 	if _inventory_ui.is_open():
@@ -295,7 +319,7 @@ func _process_journal_toggle() -> void:
 	var journal_key_pressed := Input.is_key_pressed(KEY_J)
 	var just_pressed := journal_key_pressed and not _journal_key_was_pressed
 	_journal_key_was_pressed = journal_key_pressed
-	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _world_map_ui.is_open():
+	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _world_map_ui.is_open() or _cutscene.is_playing():
 		return
 
 	if _journal_ui.is_open():
@@ -315,7 +339,7 @@ func _process_map_toggle() -> void:
 	var map_key_pressed := Input.is_key_pressed(KEY_M)
 	var just_pressed := map_key_pressed and not _map_key_was_pressed
 	_map_key_was_pressed = map_key_pressed
-	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _journal_ui.is_open():
+	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _journal_ui.is_open() or _cutscene.is_playing():
 		return
 
 	if _world_map_ui.is_open():
