@@ -68,10 +68,12 @@ const CAIRN_PUSH_BACK_CELL := Vector2i(PATH_X, 3)
 @onready var _player: Node2D = $Player
 @onready var _cairn_encounter: Node2D = $CairnEncounter
 @onready var _dialogue: DialogueBox = $UI/DialogueBox
+@onready var _inventory_ui: InventoryUI = $UI/InventoryUI
 
 var _occupied_cells: Dictionary = {}
 var _npcs_by_id: Dictionary = {}
 var _interact_was_pressed := false
+var _inventory_key_was_pressed := false
 
 
 func _ready() -> void:
@@ -106,6 +108,8 @@ func _load_save_if_continuing() -> Dictionary:
 	var data := SaveSystem.load_game()
 	if data.has("flags") and data["flags"] is Dictionary:
 		WorldState.from_dict(data["flags"])
+	if data.has("inventory") and data["inventory"] is Dictionary:
+		Inventory.from_dict(data["inventory"])
 	return data
 
 
@@ -161,14 +165,20 @@ func _save_state() -> void:
 	data["player_x"] = _player.get_grid_pos().x
 	data["player_y"] = _player.get_grid_pos().y
 	data["flags"] = WorldState.to_dict()
+	data["inventory"] = Inventory.to_dict()
 	SaveSystem.save_game(data)
 
 
 func _process(_delta: float) -> void:
+	_process_interact()
+	_process_inventory_toggle()
+
+
+func _process_interact() -> void:
 	var interact_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
 	var just_pressed := interact_pressed and not _interact_was_pressed
 	_interact_was_pressed = interact_pressed
-	if not just_pressed:
+	if not just_pressed or _inventory_ui.is_open():
 		return
 
 	if _dialogue.is_open():
@@ -186,6 +196,38 @@ func _process(_delta: float) -> void:
 		_player.set_input_enabled(false)
 		if npc == _npcs_by_id.get("cairn_npc"):
 			WorldState.set_flag(FLAG_ASKED_ABOUT_CAIRN, true)
+			# Placeholder items proving issue #17's inventory system
+			# end-to-end, granted via an existing interaction rather than
+			# new world content - not real Act 1 items, see #21.
+			Inventory.add_item("placeholder_charm")
+			Inventory.add_item("placeholder_stone")
+			# set_flag() above already triggered one _save_state() via
+			# _on_flag_changed(), but that ran before these items were
+			# added - save again so the grant survives immediately
+			# rather than only on the player's next step.
+			_save_state()
+
+
+## Toggling the inventory panel is mutually exclusive with dialogue - it
+## won't open mid-conversation, and talking is blocked while it's open
+## (see the _inventory_ui.is_open() guard in _process_interact()).
+func _process_inventory_toggle() -> void:
+	var inventory_key_pressed := Input.is_key_pressed(KEY_I)
+	var just_pressed := inventory_key_pressed and not _inventory_key_was_pressed
+	_inventory_key_was_pressed = inventory_key_pressed
+	if not just_pressed or _dialogue.is_open():
+		return
+
+	if _inventory_ui.is_open():
+		_inventory_ui.close()
+		_player.set_input_enabled(true)
+		return
+
+	if _player.is_moving():
+		return
+
+	_inventory_ui.open()
+	_player.set_input_enabled(false)
 
 
 func _place_npcs() -> void:

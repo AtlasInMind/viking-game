@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
 [ext_resource type="Script" path="res://scripts/dialogue_box.gd" id="3_dialogue"]
 [ext_resource type="PackedScene" path="res://scenes/cairn_encounter.tscn" id="4_cairn_encounter"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/dialogue_open.wav" id="5_dialogue_open_sfx"]
+[ext_resource type="Script" path="res://scripts/inventory_ui.gd" id="6_inventory"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogue"]
 bg_color = Color(0.078, 0.067, 0.055, 0.94)
@@ -37,7 +38,7 @@ offset_bottom = 26.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
 theme_override_constants/outline_size = 4
-text = "Arrow keys or WASD to move, Space to talk"
+text = "Arrow keys or WASD to move, Space to talk, I for inventory"
 
 [node name="DialogueBox" type="Panel" parent="UI"]
 anchor_left = 0.0
@@ -55,6 +56,33 @@ script = ExtResource("3_dialogue")
 stream = ExtResource("5_dialogue_open_sfx")
 
 [node name="Label" type="Label" parent="UI/DialogueBox"]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+autowrap_mode = 2
+text = ""
+
+[node name="InventoryUI" type="Panel" parent="UI"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -80.0
+offset_right = 120.0
+offset_bottom = 80.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialogue")
+script = ExtResource("6_inventory")
+
+[node name="Label" type="Label" parent="UI/InventoryUI"]
 anchor_left = 0.0
 anchor_top = 0.0
 anchor_right = 1.0

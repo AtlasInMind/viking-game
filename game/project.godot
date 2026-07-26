@@ -19,6 +19,8 @@ config/icon="res://icon.png"
 
 SaveSystem="*res://scripts/save_system.gd"
 WorldState="*res://scripts/world_state.gd"
+ItemDatabase="*res://scripts/item_database.gd"
+Inventory="*res://scripts/inventory.gd"
 
 [rendering]
 

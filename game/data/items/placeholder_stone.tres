@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="Item" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/item.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "placeholder_stone"
+display_name = "Smooth Stone"
+description = "A placeholder item proving the inventory system works end-to-end (issue #17). Not real Act 1 content - see issue #21 for the real items."
