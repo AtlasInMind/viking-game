@@ -11,6 +11,7 @@ const ITEMS: Array[Item] = [
 	preload("res://data/items/placeholder_charm.tres"),
 	preload("res://data/items/placeholder_stone.tres"),
 	preload("res://data/items/rusted_key.tres"),
+	preload("res://data/items/carved_token.tres"),
 ]
 
 var _by_id: Dictionary = {}

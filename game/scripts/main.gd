@@ -83,8 +83,25 @@ const NPC_PLACEMENTS := [
 		{"flag": "", "text": "I gave the order to send them out. If that was wrong, it's mine to carry, not the crew's kin."},
 	]},
 	{"id": "ingrid", "cell": Vector2i(18, 8), "facing": "side", "facing_right": false, "lines": [
+		{"item": "carved_token", "text": "That's - that's the token he was carving. He never showed me the whole of it. I didn't know he'd finished it... had he?"},
 		{"flag": "", "text": "He told me, the night before they left, that if the weather turned bad he'd rather we never spoke again than write me a letter I'd have to bury with him. I didn't understand it then."},
 	]},
+]
+
+## Side content (issue #22): a keepsake dropped somewhere it was never
+## meant to be found again, in the open grass east of the crossroads -
+## off every path/road tile and clear of the gate, so it's reachable by
+## wandering from the very start, not gated behind main-quest progress.
+## No sprite (see pickup.gd), no hint pointing at it - purely a reward
+## for exploring, matching design pillar #1 in docs/PROJECT_VISION.md.
+## Optional: Ingrid's reactive line above is the only thing that changes,
+## and nothing here is required to complete or progress the main quest.
+const PICKUP_SCENE := preload("res://scenes/pickup.tscn")
+const PICKUP_PLACEMENTS := [
+	{"id": "carved_token_pickup", "cell": Vector2i(24, 11),
+		"item_id": "carved_token",
+		"found_text": "Half-finished, tucked into the grass here: someone was carving a small token, roughly a woman's likeness, never finished.",
+		"already_found_text": "Just flattened grass here now."},
 ]
 
 ## Challenge-layer prototype (issue #10): stepping onto CAIRN_TRIGGER_CELL,
@@ -118,7 +135,7 @@ const SHIP_ENTRY_CELL := Vector2i(8, 7)
 @onready var _hint: Label = $UI/Hint
 
 var _occupied_cells: Dictionary = {}
-var _npcs_by_id: Dictionary = {}
+var _interactables_by_id: Dictionary = {}
 var _interact_was_pressed := false
 var _inventory_key_was_pressed := false
 var _tileset_source_id: int = -1
@@ -133,6 +150,7 @@ func _ready() -> void:
 	_tileset_source_id = _build_tileset()
 	_build_map(_tileset_source_id)
 	_place_npcs()
+	_place_pickups()
 
 	var start := _resolve_start_position(save_data)
 	_player.initialize(_ground, start, TILE_SIZE, MAP_SIZE, _occupied_cells)
@@ -299,7 +317,7 @@ func _process_interact() -> void:
 	if npc and npc.has_method("get_dialogue_text"):
 		_dialogue.open(npc.get_dialogue_text())
 		_player.set_input_enabled(false)
-		if npc == _npcs_by_id.get("cairn_npc"):
+		if npc == _interactables_by_id.get("cairn_npc"):
 			WorldState.set_flag(FLAG_ASKED_ABOUT_CAIRN, true)
 			# Placeholder items proving issue #17's inventory system
 			# end-to-end - #21 deliberately left this cairn subplot as
@@ -312,7 +330,7 @@ func _process_interact() -> void:
 			# added - save again so the grant survives immediately
 			# rather than only on the player's next step.
 			_save_state()
-		elif npc == _npcs_by_id.get("water_npc"):
+		elif npc == _interactables_by_id.get("water_npc"):
 			# The rusted key is the main quest's real item/gate step
 			# (issue #21) - only offered once the player has a reason to
 			# want it (they've met Hakon and know the ship matters).
@@ -321,13 +339,20 @@ func _process_interact() -> void:
 			if WorldState.get_flag(QuestFlags.MET_HAKON):
 				Inventory.add_item("rusted_key")
 				_save_state()
-		elif npc == _npcs_by_id.get("hakon"):
+		elif npc == _interactables_by_id.get("hakon"):
 			WorldState.set_flag(QuestFlags.MET_HAKON, true)
 			# Act 1's resolution beat (issue #21): reporting back after
 			# the ship's memory encounter closes the thread. _on_flag_changed()
 			# already saves for both set_flag() calls here, no extra call needed.
 			if WorldState.get_flag(QuestFlags.MEMORY_SURFACED):
 				WorldState.set_flag(QuestFlags.ACT_ONE_RESOLVED, true)
+		elif npc == _interactables_by_id.get("carved_token_pickup"):
+			# Side content (issue #22) - optional, not required for the
+			# main quest. Idempotent (Inventory.add_item no-ops if already
+			# held), so revisiting after taking it just repeats the
+			# already-found text with no further effect.
+			Inventory.add_item("carved_token")
+			_save_state()
 
 
 ## Toggling the inventory panel is mutually exclusive with dialogue - it
@@ -361,7 +386,19 @@ func _place_npcs() -> void:
 		npc.dialogue_lines = placement["lines"]
 		npc.position = _grid_to_world(placement["cell"])
 		_occupied_cells[placement["cell"]] = npc
-		_npcs_by_id[placement["id"]] = npc
+		_interactables_by_id[placement["id"]] = npc
+
+
+func _place_pickups() -> void:
+	for placement in PICKUP_PLACEMENTS:
+		var pickup := PICKUP_SCENE.instantiate()
+		add_child(pickup)
+		pickup.item_id = placement["item_id"]
+		pickup.found_text = placement["found_text"]
+		pickup.already_found_text = placement["already_found_text"]
+		pickup.position = _grid_to_world(placement["cell"])
+		_occupied_cells[placement["cell"]] = pickup
+		_interactables_by_id[placement["id"]] = pickup
 
 
 func _grid_to_world(cell: Vector2i) -> Vector2:
