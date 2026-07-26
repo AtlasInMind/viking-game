@@ -39,6 +39,8 @@ This is a manual process, not yet automated via GitHub Actions — worth revisit
 
 2026-07-25 — live URL loads, playable (movement/collision/camera confirmed via a scripted Playwright pass), zero console errors.
 
+2026-07-26 (issue #27) — payload/compression verified directly against this live URL: serves `index.wasm` gzip-compressed (confirmed via `Accept-Encoding: gzip`) but does **not** serve brotli (confirmed absence of `Content-Encoding: br` even when explicitly requested) — same finding itch.io's hosting produced (see below). Full measurement methodology and results (raw sizes, compression, simulated-network load times, forward asset budget) in `docs/PERFORMANCE.md`, not duplicated here.
+
 ## Hosting: itch.io (issue #24)
 
 **Live page:** https://atlasinmind.itch.io/viking-game
@@ -67,6 +69,8 @@ Store-page copy and devlog posts are plain text/rich-text fields in itch.io's da
 ### Last verified
 
 2026-07-26 — page set to public, build pushed via `butler` and confirmed processed, first devlog post published. Verified in a real (headless Chromium) browser, not just "uploaded": loaded the live itch.io page, clicked through itch.io's "Run game" load gate into the embedded iframe, confirmed the title screen renders, Start works, and movement works, with zero console/page errors.
+
+2026-07-26 (issue #27) — payload/compression verified directly against the actual embedded build URL (`html-classic.itch.zone`, Cloudflare-fronted): serves gzip (confirmed via `Accept-Encoding: gzip`) but **not** brotli (full uncompressed bytes returned even when explicitly requested, despite Cloudflare generally supporting brotli elsewhere) — same finding as GitHub Pages, see above. Full methodology/results in `docs/PERFORMANCE.md`.
 
 ## Act 1 full playtest (issue #23, 2026-07-26)
 

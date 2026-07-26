@@ -39,7 +39,7 @@ If an issue is labeled `epic`, it hasn't been detailed yet — break it into con
 ## Project structure
 
 - `game/` — the Godot project (kept separate from repo-root docs/planning). See `README.md` for the full folder breakdown and how to open/run/export it.
-- `docs/` — `PROJECT_VISION.md`, `DECISIONS.md`, `deployment.md`, `ART_BIBLE.md`, `WORLD_BIBLE.md`. Don't assume other documents exist beyond what's actually there.
+- `docs/` — `PROJECT_VISION.md`, `DECISIONS.md`, `deployment.md`, `ART_BIBLE.md`, `WORLD_BIBLE.md`, `PERFORMANCE.md`. Don't assume other documents exist beyond what's actually there.
 - `tools/art/` — procedural art-pipeline tooling (palette, shading, validation) enforcing `docs/ART_BIBLE.md`; see `tools/art/README.md`. Support code, not the game itself - `game/assets/` still holds the actual imported files.
 
 ## Maintaining documentation
