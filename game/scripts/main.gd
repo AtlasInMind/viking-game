@@ -37,12 +37,6 @@ const POND := Rect2i(3, 11, 4, 3)
 
 const NPC_SCENE := preload("res://scenes/npc.tscn")
 
-## World-state flag demonstrating cross-system reactivity (issue #8): set
-## when the player first asks the cairn NPC about the cairn, checked by the
-## water NPC's dialogue - a flag changing behavior somewhere else entirely,
-## not just an NPC remembering its own conversation.
-const FLAG_ASKED_ABOUT_CAIRN := "asked_about_cairn"
-
 ## Act 1's cast (issue #20, see docs/WORLD_BIBLE.md "One Man Remains") -
 ## placed where each person's presence actually makes sense, not just
 ## wherever the map had room. Gunnar is on the ship (see ship.gd), the
@@ -64,7 +58,11 @@ const NPC_PLACEMENTS := [
 	]},
 	{"id": "water_npc", "cell": Vector2i(7, 12), "facing": "down", "lines": [
 		{"flag": QuestFlags.MET_HAKON, "value": true, "text": "The old rockslide still blocks the way to the ship - here, take this, it should lever it aside. Bring back whatever you find."},
-		{"flag": FLAG_ASKED_ABOUT_CAIRN, "value": true, "text": "Asking about the cairn again? Some say lights move up there at night."},
+		# QuestFlags.ASKED_ABOUT_CAIRN is set by cairn_npc's own interaction,
+		# below in _process_interact() - cross-system reactivity (issue #8):
+		# one NPC's conversation changing a different NPC's line, not just
+		# an NPC remembering its own.
+		{"flag": QuestFlags.ASKED_ABOUT_CAIRN, "value": true, "text": "Asking about the cairn again? Some say lights move up there at night."},
 		{"flag": "", "text": "Careful near the water after dark. My grandmother never let us go near it then."},
 	]},
 	{"id": "hakon", "cell": Vector2i(8, 6), "facing": "down", "lines": [
@@ -108,7 +106,6 @@ const PICKUP_PLACEMENTS := [
 ## further up the road past cairn_npc, starts the "hold still" encounter;
 ## failing pushes the player back to CAIRN_PUSH_BACK_CELL (south of the
 ## trigger, clear of cairn_npc and the crossroads) to retry.
-const FLAG_CAIRN_LIGHT_PASSED := "cairn_light_passed"
 const CAIRN_TRIGGER_CELL := Vector2i(PATH_X, 1)
 const CAIRN_PUSH_BACK_CELL := Vector2i(PATH_X, 3)
 
@@ -132,12 +129,14 @@ const SHIP_ENTRY_CELL := Vector2i(8, 7)
 @onready var _cairn_encounter: Node2D = $CairnEncounter
 @onready var _dialogue: DialogueBox = $UI/DialogueBox
 @onready var _inventory_ui: InventoryUI = $UI/InventoryUI
+@onready var _journal_ui: JournalUI = $UI/JournalUI
 @onready var _hint: Label = $UI/Hint
 
 var _occupied_cells: Dictionary = {}
 var _interactables_by_id: Dictionary = {}
 var _interact_was_pressed := false
 var _inventory_key_was_pressed := false
+var _journal_key_was_pressed := false
 var _tileset_source_id: int = -1
 
 
@@ -158,7 +157,7 @@ func _ready() -> void:
 	WorldState.flag_changed.connect(_on_flag_changed)
 	Inventory.item_added.connect(_on_item_added)
 
-	_cairn_encounter.initialize(_player, CAIRN_TRIGGER_CELL, CAIRN_PUSH_BACK_CELL, WorldState.get_flag(FLAG_CAIRN_LIGHT_PASSED))
+	_cairn_encounter.initialize(_player, CAIRN_TRIGGER_CELL, CAIRN_PUSH_BACK_CELL, WorldState.get_flag(QuestFlags.CAIRN_LIGHT_PASSED))
 	_cairn_encounter.succeeded.connect(_on_cairn_encounter_succeeded)
 	_cairn_encounter.failed.connect(_on_cairn_encounter_failed)
 
@@ -216,37 +215,15 @@ func _on_flag_changed(_flag: String, _value: Variant) -> void:
 	_save_state()
 
 
-## Act 1's minimal "what to do next" (issue #21) - a trailing clause on
-## the existing controls Hint rather than a separate quest-log/journal,
-## which is explicitly out of scope until M4. Checked most-progressed
-## state first, same ordering discipline as the NPC dialogue_lines this
-## mirrors, so an earlier state doesn't shadow a later one.
-##
-## The MET_HAKON branch checks GATE.is_unlocked() (issue #25) rather than
-## jumping straight to "find Gunnar" - without it, a player who hasn't
-## happened back onto water_npc near the pond would find the south gate
-## locked with no textual pointer back to it, since water_npc is the only
-## source of GATE.required_item_id and nothing else mentions it. Deferring
-## to is_unlocked() rather than re-checking Inventory.has_item() directly
-## matters if GATE ever also gets a required_flag - that's the one method
-## _tile_for() itself trusts as the actual unlock condition, so the hint
-## can't silently drift out of sync with what's physically blocking the path.
+## Act 1's minimal "what to do next" (issue #21), now a thin wrapper over
+## quest_log.gd's single shared implementation (issue #29) rather than its
+## own duplicated if/elif chain - see quest_log.gd for the ordered step
+## list and the reasoning for checking GATE.is_unlocked() rather than the
+## item directly. Coexists with the new JournalUI panel rather than being
+## replaced by it (docs/DECISIONS.md, 2026-07-26): this stays for
+## at-a-glance guidance without opening a panel.
 func _update_hint() -> void:
-	var objective: String
-	if WorldState.get_flag(QuestFlags.ACT_ONE_RESOLVED):
-		objective = "For now, the rest stays buried with the ship."
-	elif WorldState.get_flag(QuestFlags.MEMORY_SURFACED):
-		objective = "Go back and tell Hakon what you saw."
-	elif WorldState.get_flag(QuestFlags.TALKED_TO_GUNNAR):
-		objective = "Something about the ship doesn't sit right. Look around it."
-	elif WorldState.get_flag(QuestFlags.MET_HAKON):
-		if GATE.is_unlocked():
-			objective = "Find Gunnar and ask about the ship's cargo."
-		else:
-			objective = "A rockslide still blocks the path south - ask around near the water for a way past it."
-	else:
-		objective = "Find out what happened to the crew. Start with Hakon."
-	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory\n%s" % objective
+	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory, J for journal\n%s" % QuestLog.get_current_objective()
 
 
 ## GATE (issue #18) can be flag-gated as well as item-gated, so both
@@ -267,7 +244,7 @@ func _refresh_gate_tile() -> void:
 
 
 func _on_cairn_encounter_succeeded() -> void:
-	WorldState.set_flag(FLAG_CAIRN_LIGHT_PASSED, true)
+	WorldState.set_flag(QuestFlags.CAIRN_LIGHT_PASSED, true)
 	_dialogue.open("The light drifts on past the stones. Whatever it was, it didn't seem to mind you.")
 	_player.set_input_enabled(false)
 
@@ -313,13 +290,14 @@ func _transition_to(target_scene: String, entry_cell: Vector2i) -> void:
 func _process(_delta: float) -> void:
 	_process_interact()
 	_process_inventory_toggle()
+	_process_journal_toggle()
 
 
 func _process_interact() -> void:
 	var interact_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
 	var just_pressed := interact_pressed and not _interact_was_pressed
 	_interact_was_pressed = interact_pressed
-	if not just_pressed or _inventory_ui.is_open():
+	if not just_pressed or _inventory_ui.is_open() or _journal_ui.is_open():
 		return
 
 	if _dialogue.is_open():
@@ -336,7 +314,7 @@ func _process_interact() -> void:
 		_dialogue.open(npc.get_dialogue_text())
 		_player.set_input_enabled(false)
 		if npc == _interactables_by_id.get("cairn_npc"):
-			WorldState.set_flag(FLAG_ASKED_ABOUT_CAIRN, true)
+			WorldState.set_flag(QuestFlags.ASKED_ABOUT_CAIRN, true)
 			# Placeholder items proving issue #17's inventory system
 			# end-to-end - #21 deliberately left this cairn subplot as
 			# optional village texture rather than folding it into the
@@ -373,14 +351,15 @@ func _process_interact() -> void:
 			_save_state()
 
 
-## Toggling the inventory panel is mutually exclusive with dialogue - it
-## won't open mid-conversation, and talking is blocked while it's open
-## (see the _inventory_ui.is_open() guard in _process_interact()).
+## Toggling the inventory panel is mutually exclusive with dialogue and the
+## journal - it won't open mid-conversation or while the journal is open,
+## and talking is blocked while it's open (see the _inventory_ui.is_open()
+## guard in _process_interact()).
 func _process_inventory_toggle() -> void:
 	var inventory_key_pressed := Input.is_key_pressed(KEY_I)
 	var just_pressed := inventory_key_pressed and not _inventory_key_was_pressed
 	_inventory_key_was_pressed = inventory_key_pressed
-	if not just_pressed or _dialogue.is_open():
+	if not just_pressed or _dialogue.is_open() or _journal_ui.is_open():
 		return
 
 	if _inventory_ui.is_open():
@@ -392,6 +371,27 @@ func _process_inventory_toggle() -> void:
 		return
 
 	_inventory_ui.open()
+	_player.set_input_enabled(false)
+
+
+## Mirrors _process_inventory_toggle() exactly (issue #29) - mutually
+## exclusive with dialogue and the inventory panel the same way.
+func _process_journal_toggle() -> void:
+	var journal_key_pressed := Input.is_key_pressed(KEY_J)
+	var just_pressed := journal_key_pressed and not _journal_key_was_pressed
+	_journal_key_was_pressed = journal_key_pressed
+	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open():
+		return
+
+	if _journal_ui.is_open():
+		_journal_ui.close()
+		_player.set_input_enabled(true)
+		return
+
+	if _player.is_moving():
+		return
+
+	_journal_ui.open()
 	_player.set_input_enabled(false)
 
 

@@ -1,18 +1,28 @@
 class_name QuestFlags
 
-## Shared WorldState flag-name constants for Act 1's main quest thread
-## (issue #21) - a single source of truth, since both main.gd (village)
-## and ship.gd need to set and check several of these, unlike the
-## earlier M1 flags (FLAG_ASKED_ABOUT_CAIRN, FLAG_CAIRN_LIGHT_PASSED),
-## which only ever needed one script and stayed local consts there.
+## Shared WorldState flag-name constants (issue #21; broadened by issue #29)
+## - a single source of truth for any flag name more than one script needs.
+## MET_HAKON/TALKED_TO_GUNNAR/MEMORY_SURFACED/ACT_ONE_RESOLVED were the
+## first, needed by both main.gd (village) and ship.gd for the main quest
+## thread. ASKED_ABOUT_CAIRN/CAIRN_LIGHT_PASSED started as local consts in
+## main.gd (only one script needed them at the time) but moved here once
+## quest_log.gd became a second consumer - a magic-string duplicate of
+## main.gd's constant would have been the alternative, and this project's
+## own precedent (see docs/DECISIONS.md's dialogue_lines entry) is to
+## centralize a name the moment a second consumer needs it, not before.
 ##
-## The thread: meet Hakon in the village -> he points to Gunnar; water_npc
-## only offers the way past the gate once you've met Hakon -> the ship;
-## talk to Gunnar about the cargo -> a memory surfaces near the shelter
-## (the ship's own challenge-layer beat) -> report back to Hakon for
-## Act 1's resolution beat.
+## The main quest thread: meet Hakon in the village -> he points to Gunnar;
+## water_npc only offers the way past the gate once you've met Hakon -> the
+## ship; talk to Gunnar about the cargo -> a memory surfaces near the
+## shelter (the ship's own challenge-layer beat) -> report back to Hakon
+## for Act 1's resolution beat.
 
 const MET_HAKON := "met_hakon"
 const TALKED_TO_GUNNAR := "talked_to_gunnar"
 const MEMORY_SURFACED := "memory_surfaced"
 const ACT_ONE_RESOLVED := "act_one_resolved"
+
+## Side content (issue #10/#22, see main.gd's NPC/encounter wiring) - the
+## cairn subplot's own two flags, unrelated to the main quest thread above.
+const ASKED_ABOUT_CAIRN := "asked_about_cairn"
+const CAIRN_LIGHT_PASSED := "cairn_light_passed"

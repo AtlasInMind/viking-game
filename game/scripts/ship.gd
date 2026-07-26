@@ -79,6 +79,7 @@ const MEMORY_PUSH_BACK_CELL := Vector2i(10, 4)
 @onready var _player: Node2D = $Player
 @onready var _dialogue: DialogueBox = $UI/DialogueBox
 @onready var _inventory_ui: InventoryUI = $UI/InventoryUI
+@onready var _journal_ui: JournalUI = $UI/JournalUI
 @onready var _memory_encounter: Node2D = $MemoryEncounter
 @onready var _hint: Label = $UI/Hint
 
@@ -86,6 +87,7 @@ var _occupied_cells: Dictionary = {}
 var _npcs_by_id: Dictionary = {}
 var _interact_was_pressed := false
 var _inventory_key_was_pressed := false
+var _journal_key_was_pressed := false
 var _tileset_source_id: int = -1
 
 
@@ -163,26 +165,14 @@ func _on_flag_changed(_flag: String, _value: Variant) -> void:
 	_save_state()
 
 
-## Mirrors main.gd's _update_hint() - same objective text and priority
-## order, so the hint reads consistently regardless of which area the
-## player is currently in. One branch doesn't need mirroring (issue #25):
-## main.gd's MET_HAKON branch checks whether the player has GATE's item yet,
-## since water_npc (the only source of it) is easy to miss - but GATE is
-## what blocks the village's south path in the first place, so reaching
-## this scene at all already means that check has passed.
+## Now a thin wrapper over quest_log.gd's single shared implementation
+## (issue #29), same as main.gd's _update_hint() - the two are identical
+## now, resolving the "one branch doesn't need mirroring" caveat issue #25
+## left on this function (see docs/DECISIONS.md): both scripts call the
+## exact same QuestLog.get_current_objective(), so there's no divergent
+## logic left to keep in sync by hand.
 func _update_hint() -> void:
-	var objective: String
-	if WorldState.get_flag(QuestFlags.ACT_ONE_RESOLVED):
-		objective = "For now, the rest stays buried with the ship."
-	elif WorldState.get_flag(QuestFlags.MEMORY_SURFACED):
-		objective = "Go back and tell Hakon what you saw."
-	elif WorldState.get_flag(QuestFlags.TALKED_TO_GUNNAR):
-		objective = "Something about the ship doesn't sit right. Look around it."
-	elif WorldState.get_flag(QuestFlags.MET_HAKON):
-		objective = "Find Gunnar and ask about the ship's cargo."
-	else:
-		objective = "Find out what happened to the crew. Start with Hakon."
-	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory\n%s" % objective
+	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory, J for journal\n%s" % QuestLog.get_current_objective()
 
 
 func _on_memory_encounter_succeeded() -> void:
@@ -223,6 +213,7 @@ func _transition_to(target_scene: String, entry_cell: Vector2i) -> void:
 func _process(_delta: float) -> void:
 	_process_interact()
 	_process_inventory_toggle()
+	_process_journal_toggle()
 
 
 ## Mirrors main.gd's _process_interact(), trimmed - no items/gates/quest
@@ -231,7 +222,7 @@ func _process_interact() -> void:
 	var interact_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
 	var just_pressed := interact_pressed and not _interact_was_pressed
 	_interact_was_pressed = interact_pressed
-	if not just_pressed or _inventory_ui.is_open():
+	if not just_pressed or _inventory_ui.is_open() or _journal_ui.is_open():
 		return
 
 	if _dialogue.is_open():
@@ -255,7 +246,7 @@ func _process_inventory_toggle() -> void:
 	var inventory_key_pressed := Input.is_key_pressed(KEY_I)
 	var just_pressed := inventory_key_pressed and not _inventory_key_was_pressed
 	_inventory_key_was_pressed = inventory_key_pressed
-	if not just_pressed or _dialogue.is_open():
+	if not just_pressed or _dialogue.is_open() or _journal_ui.is_open():
 		return
 
 	if _inventory_ui.is_open():
@@ -267,6 +258,26 @@ func _process_inventory_toggle() -> void:
 		return
 
 	_inventory_ui.open()
+	_player.set_input_enabled(false)
+
+
+## Mirrors _process_inventory_toggle() exactly (issue #29).
+func _process_journal_toggle() -> void:
+	var journal_key_pressed := Input.is_key_pressed(KEY_J)
+	var just_pressed := journal_key_pressed and not _journal_key_was_pressed
+	_journal_key_was_pressed = journal_key_pressed
+	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open():
+		return
+
+	if _journal_ui.is_open():
+		_journal_ui.close()
+		_player.set_input_enabled(true)
+		return
+
+	if _player.is_moving():
+		return
+
+	_journal_ui.open()
 	_player.set_input_enabled(false)
 
 

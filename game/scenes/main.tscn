@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/cairn_encounter.tscn" id="4_cairn_encounter"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/dialogue_open.wav" id="5_dialogue_open_sfx"]
 [ext_resource type="Script" path="res://scripts/inventory_ui.gd" id="6_inventory"]
+[ext_resource type="Script" path="res://scripts/journal_ui.gd" id="7_journal"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogue"]
 bg_color = Color(0.078, 0.067, 0.055, 0.94)
@@ -39,7 +40,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
 theme_override_constants/outline_size = 4
 autowrap_mode = 2
-text = "Arrow keys or WASD to move, Space to talk, I for inventory"
+text = "Arrow keys or WASD to move, Space to talk, I for inventory, J for journal"
 
 [node name="DialogueBox" type="Panel" parent="UI"]
 anchor_left = 0.0
@@ -92,6 +93,37 @@ offset_left = 10.0
 offset_top = 8.0
 offset_right = -10.0
 offset_bottom = -8.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+autowrap_mode = 2
+text = ""
+
+[node name="JournalUI" type="Panel" parent="UI"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -230.0
+offset_top = -125.0
+offset_right = 230.0
+offset_bottom = 125.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialogue")
+script = ExtResource("7_journal")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="UI/JournalUI"]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
+horizontal_scroll_mode = 0
+
+[node name="Label" type="Label" parent="UI/JournalUI/ScrollContainer"]
+custom_minimum_size = Vector2(440, 0)
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
 theme_override_constants/outline_size = 3
