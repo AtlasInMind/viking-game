@@ -1,7 +1,6 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=6 format=3]
 
-[ext_resource type="Script" path="res://scripts/title_screen.gd" id="1_title"]
-[ext_resource type="Texture2D" path="res://icon.png" id="2_icon"]
+[ext_resource type="Script" path="res://scripts/settings_screen.gd" id="1_settings"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(0.078, 0.067, 0.055, 0.94)
@@ -51,24 +50,12 @@ corner_radius_top_right = 3
 corner_radius_bottom_left = 3
 corner_radius_bottom_right = 3
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_disabled"]
-bg_color = Color(0.12, 0.12, 0.12, 0.6)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.5, 0.47, 0.4, 0.5)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_left = 3
-corner_radius_bottom_right = 3
-
-[node name="TitleScreen" type="Control"]
+[node name="SettingsScreen" type="Control"]
 anchor_left = 0.0
 anchor_top = 0.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-script = ExtResource("1_title")
+script = ExtResource("1_settings")
 
 [node name="Background" type="ColorRect" parent="."]
 anchor_left = 0.0
@@ -77,88 +64,115 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.05, 0.08, 0.06, 1)
 
-[node name="MenuPanel" type="Panel" parent="."]
+[node name="Panel" type="Panel" parent="."]
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -110.0
-offset_top = -90.0
-offset_right = 110.0
-offset_bottom = 110.0
+offset_left = -200.0
+offset_top = -125.0
+offset_right = 200.0
+offset_bottom = 125.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="Icon" type="TextureRect" parent="MenuPanel"]
-offset_left = 86.0
-offset_top = 10.0
-offset_right = 134.0
-offset_bottom = 58.0
-texture = ExtResource("2_icon")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="Title" type="Label" parent="MenuPanel"]
+[node name="Title" type="Label" parent="Panel"]
 offset_left = 10.0
-offset_top = 62.0
-offset_right = 210.0
-offset_bottom = 90.0
+offset_top = 6.0
+offset_right = 390.0
+offset_bottom = 28.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
 theme_override_constants/outline_size = 3
-theme_override_font_sizes/font_size = 20
-horizontal_alignment = 1
-text = "Viking Game"
-
-[node name="StartButton" type="Button" parent="MenuPanel"]
-offset_left = 45.0
-offset_top = 100.0
-offset_right = 175.0
-offset_bottom = 126.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
-theme_override_constants/outline_size = 3
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
-theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
-text = "Start"
-
-[node name="ContinueButton" type="Button" parent="MenuPanel"]
-offset_left = 45.0
-offset_top = 134.0
-offset_right = 175.0
-offset_bottom = 160.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
-theme_override_colors/font_disabled_color = Color(0.65, 0.62, 0.55, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
-theme_override_constants/outline_size = 3
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
-theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
-disabled = true
-text = "Continue"
-
-[node name="SettingsButton" type="Button" parent="MenuPanel"]
-offset_left = 45.0
-offset_top = 168.0
-offset_right = 175.0
-offset_bottom = 194.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
-theme_override_constants/outline_size = 3
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
-theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
+theme_override_font_sizes/font_size = 18
 text = "Settings"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel"]
+offset_left = 10.0
+offset_top = 34.0
+offset_right = 390.0
+offset_bottom = 172.0
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/ScrollContainer"]
+custom_minimum_size = Vector2(360, 0)
+theme_override_constants/separation = 6
+
+[node name="TextScaleRow" type="HBoxContainer" parent="Panel"]
+offset_left = 10.0
+offset_top = 178.0
+offset_right = 390.0
+offset_bottom = 202.0
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="Panel/TextScaleRow"]
+custom_minimum_size = Vector2(150, 0)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+text = "Text Size"
+
+[node name="MinusButton" type="Button" parent="Panel/TextScaleRow"]
+custom_minimum_size = Vector2(30, 0)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
+text = "-"
+
+[node name="ValueLabel" type="Label" parent="Panel/TextScaleRow"]
+custom_minimum_size = Vector2(60, 0)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+horizontal_alignment = 1
+text = "100%"
+
+[node name="PlusButton" type="Button" parent="Panel/TextScaleRow"]
+custom_minimum_size = Vector2(30, 0)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
+text = "+"
+
+[node name="ResetButton" type="Button" parent="Panel"]
+offset_left = 10.0
+offset_top = 208.0
+offset_right = 190.0
+offset_bottom = 234.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
+text = "Reset to Defaults"
+
+[node name="BackButton" type="Button" parent="Panel"]
+offset_left = 210.0
+offset_top = 208.0
+offset_right = 390.0
+offset_bottom = 234.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
+text = "Back"

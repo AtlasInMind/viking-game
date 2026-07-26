@@ -1,0 +1,89 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/touch_controls.gd" id="1_touch"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_touch_btn"]
+bg_color = Color(0.078, 0.067, 0.055, 0.55)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.78, 0.6, 0.7)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[node name="TouchControls" type="Control"]
+mouse_filter = 2
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_touch")
+
+[node name="DPad" type="Control" parent="."]
+mouse_filter = 2
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+
+[node name="Up" type="Button" parent="DPad"]
+offset_left = 27.0
+offset_top = 181.0
+offset_right = 53.0
+offset_bottom = 207.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_touch_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_touch_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_touch_btn")
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+text = "^"
+
+[node name="Down" type="Button" parent="DPad"]
+offset_left = 27.0
+offset_top = 233.0
+offset_right = 53.0
+offset_bottom = 259.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_touch_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_touch_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_touch_btn")
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+text = "v"
+
+[node name="Left" type="Button" parent="DPad"]
+offset_left = 1.0
+offset_top = 207.0
+offset_right = 27.0
+offset_bottom = 233.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_touch_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_touch_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_touch_btn")
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+text = "<"
+
+[node name="Right" type="Button" parent="DPad"]
+offset_left = 53.0
+offset_top = 207.0
+offset_right = 79.0
+offset_bottom = 233.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_touch_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_touch_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_touch_btn")
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+text = ">"
+
+[node name="InteractButton" type="Button" parent="."]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -76.0
+offset_top = -70.0
+offset_right = -16.0
+offset_bottom = -20.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_touch_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_touch_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_touch_btn")
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+text = "Talk"

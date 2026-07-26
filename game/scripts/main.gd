@@ -147,6 +147,8 @@ var _tileset_source_id: int = -1
 
 
 func _ready() -> void:
+	_hint.add_theme_font_size_override("font_size", Settings.scaled_font_size())
+
 	# Load save data (and restore WorldState from it) before placing NPCs,
 	# so a continued game's NPCs reflect prior flag state from their very
 	# first frame instead of only updating reactively on the next change.
@@ -241,7 +243,7 @@ func _on_flag_changed(_flag: String, _value: Variant) -> void:
 ## replaced by it (docs/DECISIONS.md, 2026-07-26): this stays for
 ## at-a-glance guidance without opening a panel.
 func _update_hint() -> void:
-	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory, J for journal, M for map\n%s" % QuestLog.get_current_objective()
+	_hint.text = "%s\n%s" % [Settings.controls_hint_text(), QuestLog.get_current_objective()]
 
 
 ## GATE (issue #18) can be flag-gated as well as item-gated, so both
@@ -331,7 +333,7 @@ func _process(_delta: float) -> void:
 
 
 func _process_interact() -> void:
-	var interact_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
+	var interact_pressed := Input.is_action_pressed("interact")
 	var just_pressed := interact_pressed and not _interact_was_pressed
 	_interact_was_pressed = interact_pressed
 	if not just_pressed or _inventory_ui.is_open() or _journal_ui.is_open() or _world_map_ui.is_open():
@@ -393,7 +395,7 @@ func _process_interact() -> void:
 ## and talking is blocked while it's open (see the _inventory_ui.is_open()
 ## guard in _process_interact()).
 func _process_inventory_toggle() -> void:
-	var inventory_key_pressed := Input.is_key_pressed(KEY_I)
+	var inventory_key_pressed := Input.is_action_pressed("toggle_inventory")
 	var just_pressed := inventory_key_pressed and not _inventory_key_was_pressed
 	_inventory_key_was_pressed = inventory_key_pressed
 	if not just_pressed or _dialogue.is_open() or _journal_ui.is_open() or _world_map_ui.is_open():
@@ -414,7 +416,7 @@ func _process_inventory_toggle() -> void:
 ## Mirrors _process_inventory_toggle() exactly (issue #29) - mutually
 ## exclusive with dialogue and the inventory panel the same way.
 func _process_journal_toggle() -> void:
-	var journal_key_pressed := Input.is_key_pressed(KEY_J)
+	var journal_key_pressed := Input.is_action_pressed("toggle_journal")
 	var just_pressed := journal_key_pressed and not _journal_key_was_pressed
 	_journal_key_was_pressed = journal_key_pressed
 	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _world_map_ui.is_open():
@@ -437,7 +439,7 @@ func _process_journal_toggle() -> void:
 ## Unlike those two, open() takes this scene's own AREA_ID so the panel can
 ## mark it "(you are here)" rather than offering a travel button to it.
 func _process_map_toggle() -> void:
-	var map_key_pressed := Input.is_key_pressed(KEY_M)
+	var map_key_pressed := Input.is_action_pressed("toggle_map")
 	var just_pressed := map_key_pressed and not _map_key_was_pressed
 	_map_key_was_pressed = map_key_pressed
 	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _journal_ui.is_open():

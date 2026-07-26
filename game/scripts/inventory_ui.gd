@@ -4,14 +4,21 @@ extends Panel
 ## Minimal inventory panel (issue #17) - lists held items' names/
 ## descriptions as plain text. Placeholder visuals only; M2's art pipeline
 ## re-skins this later, same as the rest of the M1 slice was in #13.
+##
+## ScrollContainer added (issue #32) mirroring JournalUI's own - a large
+## text-size setting plus a long enough held-item list can outgrow this
+## panel's fixed size the same way issue #29's journal entry already found,
+## so scrolling instead of silently clipping past the panel's border is the
+## established fix here, not a new one.
 
-@onready var _label: Label = $Label
+@onready var _label: Label = $ScrollContainer/Label
 
 var _is_open := false
 
 
 func _ready() -> void:
 	visible = false
+	_label.add_theme_font_size_override("font_size", Settings.scaled_font_size())
 
 
 func open() -> void:

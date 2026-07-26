@@ -38,12 +38,12 @@ Named ramps, each 2-4 shades (Shadow → Dark → Base → Light, not every ramp
 | **Earth** (path/dirt) | Dark | `166, 132, 88` | `#A68458` | Path speckle *(existing)* |
 | | Base | `196, 164, 116` | `#C4A474` | Path ground *(existing)* |
 | | Light | `214, 186, 142` | `#D6BA8E` | Path highlight *(existing)* |
-| **Stone** (walls) | Dark | `98, 86, 70` | `#625646` | Wall mortar *(existing)* |
-| | Base | `132, 118, 100` | `#847664` | Wall base *(existing)* |
-| | Light | `156, 142, 122` | `#9C8E7A` | Wall highlight *(existing)* |
-| **Timber** (roofs/doors) | Dark | `112, 52, 36` | `#703424` | Roof shingle *(existing)* |
-| | Base | `140, 68, 48` | `#8C4430` | Roof base *(existing)* |
-| | Light | `172, 96, 68` | `#AC6044` | Roof/door highlight (new) |
+| **Stone** (walls) | Dark | `110, 98, 80` | `#6E6250` | Wall mortar *(revised - see "Colourblind-safety check")* |
+| | Base | `144, 130, 110` | `#90826E` | Wall base *(revised - see "Colourblind-safety check")* |
+| | Light | `168, 154, 132` | `#A89A84` | Wall highlight *(revised - see "Colourblind-safety check")* |
+| **Timber** (roofs/doors) | Dark | `88, 32, 22` | `#582016` | Roof shingle *(revised - see "Colourblind-safety check")* |
+| | Base | `116, 48, 34` | `#743022` | Roof base *(revised - see "Colourblind-safety check")* |
+| | Light | `148, 76, 54` | `#944C36` | Roof/door highlight *(revised - see "Colourblind-safety check")* |
 | **Water** | Deep | `42, 88, 138` | `#2A588A` | Water dot detail *(existing)* |
 | | Base | `58, 110, 165` | `#3A6EA5` | Water base *(existing)* |
 | | Light | `91, 143, 199` | `#5B8FC7` | Water wave highlight *(existing)* |
@@ -99,6 +99,18 @@ Established in `dialogue_box.gd`/`title_screen.tscn`, formalized here so it's fo
 - Disabled text (e.g. the Continue button before a save exists): muted tan-gray `(166, 158, 140)` / `#A69E8C`.
 - Buttons: same panel background/border language as the outer panel, at a smaller scale, with distinct (not just alpha-faded) normal/hover/pressed/disabled fill shades - see `title_screen.tscn`'s `StyleBoxFlat_btn_*` sub-resources for the concrete values already in use, which this rule formalizes rather than changes.
 
+## Colourblind-safety check
+
+Issue #32 required checking the master palette against a colourblind simulation, not just eyeballing it. `tools/art/colorblind_check.py` simulates protanopia/deuteranopia/tritanopia (Brettel/Vienot-derived linear-RGB matrices, the same family of approximation behind common open-source simulators like Coblis - not a clinically validated tool, but a real, checkable heuristic rather than a guess) and checks Euclidean sRGB distance on the pairs that actually matter for play, not every combination across all ~40 palette colors: whether a tile the player can walk on (grass/path) stays visually distinct from one that blocks movement (water/wall/roof) once colour-vision deficiency is simulated. The single highest-stakes case is the south gate (`game/scripts/main.gd`'s `GATE`) - the exact same map cell renders as Earth (path, open) or Stone (wall, locked) depending on `WorldState`, so a player has to tell those two colors apart at one spot to know whether the way south is open.
+
+**Finding:** the south gate's own path-vs-wall pair was already comfortably safe (distance 78-87 against a 45.0 threshold, all three CVD types) even before any change. Two related pairs were not: grass-vs-wall and grass-vs-roof both fell short under protanopia (36.4 and 33.5) and grass-vs-wall also fell short under deuteranopia (43.9) - `Vegetation.base`'s luminance (≈115) sits almost exactly between `Stone.base`'s (≈120) and `Timber.base`'s (≈82), so once red/green hue discrimination is impaired, grass collapses toward wall/roof gray-brown rather than staying visually separate. This wasn't purely theoretical: village houses (`game/scripts/main.gd`'s `HOUSE_A_WALL`/`HOUSE_B_WALL`) sit directly in open grass, not fenced off by a path, so the wall/grass boundary is a real navigation edge a player relies on.
+
+**Adjustment made:** `Stone` shifted uniformly lighter (+12,+12,+10 across dark/base/light, preserving the ramp's own internal contrast rather than just bumping one shade) and `Timber` shifted uniformly darker (-24,-20,-14) - both chosen by iterating candidate shifts against the actual simulation until every check cleared the threshold with real margin, not by eye. All 21 checks (7 pairs × 3 CVD types) now pass; see `tools/art/colorblind_check.py`'s own output for the full table. `Stone`/`Timber` were chosen over adjusting `Vegetation` because grass is the game's single most pervasive tile - walls and roofs are a much smaller visual footprint to change. The master palette table above reflects the revised values; `game/assets/tiles/overworld_tileset.png` was regenerated from them via `tools/art/generate/tileset.py`.
+
+**Caveat, stated plainly:** this check compares each ramp's flat "base" swatch, which is a reasonable proxy for a tile's dominant color (per this doc's own "flat, undetailed ground fill uses Base" rule) but doesn't account for the directional edge-shading walls/roofs actually carry in the rendered tile (`tools/art/shading.py`'s `apply_edge_shading`) - real in-game tiles likely read even more distinctly than this table suggests, not less, since edge highlights/shingle lines add luminance contrast this check doesn't model. Euclidean sRGB distance is also a cheap heuristic, not CIEDE2000 - treat the numbers as "clearly fine" / "worth a look," not exact science.
+
 ## Last updated
+
+2026-07-26 - Stone/Timber ramps revised for colourblind safety (issue #32); see "Colourblind-safety check" above.
 
 2026-07-25

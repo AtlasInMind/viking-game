@@ -2,11 +2,13 @@ extends Control
 
 @onready var _start_button: Button = $MenuPanel/StartButton
 @onready var _continue_button: Button = $MenuPanel/ContinueButton
+@onready var _settings_button: Button = $MenuPanel/SettingsButton
 
 
 func _ready() -> void:
 	_start_button.pressed.connect(_on_start_pressed)
 	_continue_button.pressed.connect(_on_continue_pressed)
+	_settings_button.pressed.connect(_on_settings_pressed)
 	_continue_button.disabled = not SaveSystem.has_save()
 	_start_button.grab_focus()
 
@@ -31,3 +33,10 @@ func _on_continue_pressed() -> void:
 	if not (target_scene is String) or not ResourceLoader.exists(target_scene):
 		target_scene = "res://scenes/main.tscn"
 	get_tree().change_scene_to_file(target_scene)
+
+
+## Reachable before any save exists (issue #32) - key bindings/text size are
+## player/device preferences, not tied to a save game, so remapping "I" away
+## from Inventory (say) shouldn't require starting a game first.
+func _on_settings_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/settings_screen.tscn")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://scripts/inventory_ui.gd" id="6_inventory"]
 [ext_resource type="Script" path="res://scripts/journal_ui.gd" id="7_journal"]
 [ext_resource type="Script" path="res://scripts/world_map_ui.gd" id="8_world_map"]
+[ext_resource type="PackedScene" path="res://scenes/touch_controls.tscn" id="9_touch_controls"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogue"]
 bg_color = Color(0.078, 0.067, 0.055, 0.94)
@@ -85,7 +86,7 @@ offset_bottom = 80.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_dialogue")
 script = ExtResource("6_inventory")
 
-[node name="Label" type="Label" parent="UI/InventoryUI"]
+[node name="ScrollContainer" type="ScrollContainer" parent="UI/InventoryUI"]
 anchor_left = 0.0
 anchor_top = 0.0
 anchor_right = 1.0
@@ -94,6 +95,10 @@ offset_left = 10.0
 offset_top = 8.0
 offset_right = -10.0
 offset_bottom = -8.0
+horizontal_scroll_mode = 0
+
+[node name="Label" type="Label" parent="UI/InventoryUI/ScrollContainer"]
+custom_minimum_size = Vector2(220, 0)
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
 theme_override_constants/outline_size = 3
@@ -156,3 +161,5 @@ horizontal_scroll_mode = 0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/WorldMapUI/ScrollContainer"]
 custom_minimum_size = Vector2(260, 0)
+
+[node name="TouchControls" parent="UI" instance=ExtResource("9_touch_controls")]

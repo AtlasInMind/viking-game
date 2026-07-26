@@ -95,15 +95,20 @@ func _process(_delta: float) -> void:
 	_move_to(target)
 
 
+## Reads Godot input actions (issue #32), not raw keycodes - Settings owns
+## what physical key(s) each action is bound to (remappable primary + a
+## fixed WASD/etc. alias), and touch_controls.gd drives these same actions
+## via Input.action_press()/action_release(), so movement/interact code
+## never needs to branch on input source.
 func _read_direction() -> Vector2i:
 	var direction := Vector2i.ZERO
-	if Input.is_key_pressed(KEY_UP) or Input.is_key_pressed(KEY_W):
+	if Input.is_action_pressed("move_up"):
 		direction.y -= 1
-	if Input.is_key_pressed(KEY_DOWN) or Input.is_key_pressed(KEY_S):
+	if Input.is_action_pressed("move_down"):
 		direction.y += 1
-	if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A):
+	if Input.is_action_pressed("move_left"):
 		direction.x -= 1
-	if Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D):
+	if Input.is_action_pressed("move_right"):
 		direction.x += 1
 	if direction.x != 0 and direction.y != 0:
 		direction.y = 0

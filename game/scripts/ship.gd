@@ -99,6 +99,8 @@ var _tileset_source_id: int = -1
 
 
 func _ready() -> void:
+	_hint.add_theme_font_size_override("font_size", Settings.scaled_font_size())
+
 	# Mirrors main.gd's _load_save_if_continuing() exactly: WorldState and
 	# Inventory are autoloads and already correct in memory for an
 	# in-session transition from the village; pending_load only comes back
@@ -189,7 +191,7 @@ func _on_flag_changed(_flag: String, _value: Variant) -> void:
 ## exact same QuestLog.get_current_objective(), so there's no divergent
 ## logic left to keep in sync by hand.
 func _update_hint() -> void:
-	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory, J for journal, M for map\n%s" % QuestLog.get_current_objective()
+	_hint.text = "%s\n%s" % [Settings.controls_hint_text(), QuestLog.get_current_objective()]
 
 
 ## Reworked into a real CutscenePlayer sequence (issue #31) - Act 1's
@@ -264,7 +266,7 @@ func _process(_delta: float) -> void:
 ## Mirrors main.gd's _process_interact(), trimmed - no items/gates/quest
 ## flags here yet, just NPC dialogue.
 func _process_interact() -> void:
-	var interact_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
+	var interact_pressed := Input.is_action_pressed("interact")
 	var just_pressed := interact_pressed and not _interact_was_pressed
 	_interact_was_pressed = interact_pressed
 	if not just_pressed or _inventory_ui.is_open() or _journal_ui.is_open() or _world_map_ui.is_open():
@@ -296,7 +298,7 @@ func _process_interact() -> void:
 
 
 func _process_inventory_toggle() -> void:
-	var inventory_key_pressed := Input.is_key_pressed(KEY_I)
+	var inventory_key_pressed := Input.is_action_pressed("toggle_inventory")
 	var just_pressed := inventory_key_pressed and not _inventory_key_was_pressed
 	_inventory_key_was_pressed = inventory_key_pressed
 	if not just_pressed or _dialogue.is_open() or _journal_ui.is_open() or _world_map_ui.is_open() or _cutscene.is_playing():
@@ -316,7 +318,7 @@ func _process_inventory_toggle() -> void:
 
 ## Mirrors _process_inventory_toggle() exactly (issue #29).
 func _process_journal_toggle() -> void:
-	var journal_key_pressed := Input.is_key_pressed(KEY_J)
+	var journal_key_pressed := Input.is_action_pressed("toggle_journal")
 	var just_pressed := journal_key_pressed and not _journal_key_was_pressed
 	_journal_key_was_pressed = journal_key_pressed
 	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _world_map_ui.is_open() or _cutscene.is_playing():
@@ -336,7 +338,7 @@ func _process_journal_toggle() -> void:
 
 ## Mirrors _process_inventory_toggle()/_process_journal_toggle() (issue #30).
 func _process_map_toggle() -> void:
-	var map_key_pressed := Input.is_key_pressed(KEY_M)
+	var map_key_pressed := Input.is_action_pressed("toggle_map")
 	var just_pressed := map_key_pressed and not _map_key_was_pressed
 	_map_key_was_pressed = map_key_pressed
 	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _journal_ui.is_open() or _cutscene.is_playing():

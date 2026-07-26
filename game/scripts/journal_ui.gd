@@ -29,6 +29,7 @@ var _is_open := false
 
 func _ready() -> void:
 	visible = false
+	_label.add_theme_font_size_override("font_size", Settings.scaled_font_size())
 
 
 func open() -> void:

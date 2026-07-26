@@ -22,6 +22,7 @@ WorldState="*res://scripts/world_state.gd"
 ItemDatabase="*res://scripts/item_database.gd"
 Inventory="*res://scripts/inventory.gd"
 WorldMap="*res://scripts/world_map.gd"
+Settings="*res://scripts/settings.gd"
 
 [rendering]
 
