@@ -39,6 +39,35 @@ This is a manual process, not yet automated via GitHub Actions — worth revisit
 
 2026-07-25 — live URL loads, playable (movement/collision/camera confirmed via a scripted Playwright pass), zero console errors.
 
+## Hosting: itch.io (issue #24)
+
+**Live page:** https://atlasinmind.itch.io/viking-game
+
+Publishes the same `--export-release` web build (see above) as a second, independent distribution channel alongside GitHub Pages, per `docs/DECISIONS.md`'s publishing decision. Uses itch.io's official CLI, `butler`, rather than manual web-dashboard uploads, so builds can be pushed repeatedly without a human re-uploading through the browser each time.
+
+### One-time setup (already done, kept here for a future machine/session)
+
+- `butler` binary lives at `.tools/butler/butler` (git-ignored — see `.gitignore` — it's a downloaded tool, not project source). Fetched from `https://broth.itch.zone/butler/darwin-arm64/LATEST/archive/default` (swap the platform segment for other OSes/architectures).
+- Login must happen from a real terminal with a TTY (Terminal.app/iTerm), not through an automated/non-interactive shell bridge — `butler login`'s browser-authorization flow fails with "stdin is not a terminal" otherwise, and falls back to asking for `BUTLER_API_KEY`, which would mean typing the API key somewhere it could be captured/logged. Run `.tools/butler/butler login` directly in a real terminal; it opens a browser to authorize and stores the credential at `~/Library/Application Support/itch/butler_creds` (macOS) — nothing else needs to see the key itself.
+- The itch.io project page itself (title, classification, description, tags, pricing, visibility) has no public API — it's created and edited entirely through itch.io's web dashboard by whoever owns the account. `butler` only pushes builds to a project that already exists.
+
+### How to push a new build
+
+```sh
+cd game && godot --headless --export-release "Web" ../builds/web/index.html   # from docs/deployment.md's existing export step
+cd .. && .tools/butler/butler push builds/web atlasinmind/viking-game:web --userversion-file <(git rev-parse --short HEAD)
+```
+
+`butler status atlasinmind/viking-game:web` confirms once the pushed build has finished processing on itch.io's end (can lag behind the push completing by up to a minute or two — poll rather than assume it's instant).
+
+### Known limitation: description/devlog text needs a manual paste
+
+Store-page copy and devlog posts are plain text/rich-text fields in itch.io's dashboard with no API — pasting Markdown-formatted text (e.g. `**bold**`) into them does not render as formatting, since the editor isn't a Markdown parser; it shows the literal asterisks instead. Any bold/emphasis needs to be applied by selecting the text and using itch.io's own toolbar buttons after pasting, then deleting the leftover Markdown characters. Copy drafts for this project live in `docs/promo/` (`store_page_copy.md`, `devlog_01.md`) as plain reference text to paste from, not literal Markdown to render as-is.
+
+### Last verified
+
+2026-07-26 — page set to public, build pushed via `butler` and confirmed processed, first devlog post published. Verified in a real (headless Chromium) browser, not just "uploaded": loaded the live itch.io page, clicked through itch.io's "Run game" load gate into the embedded iframe, confirmed the title screen renders, Start works, and movement works, with zero console/page errors.
+
 ## Act 1 full playtest (issue #23, 2026-07-26)
 
 Per `docs/PROJECT_VISION.md`'s verification strategy ("structured playtest each milestone... log findings as issues"), Act 1 was played start-to-finish twice against a locally-served `--export-release` web build (not just the editor), driven with Playwright/Chromium: once following only the main quest thread, once also pursuing side content (the cairn subplot and its "hold still" challenge encounter - both success and fail/retry paths, the carved-token pickup and Ingrid's reactive line, and the cross-NPC `asked_about_cairn` flag). Both areas (village and the returned longship) were covered, with save/reload exercised at three points in each pass (mid-village, on the ship, and after Act 1's resolution beat), confirming position, inventory, and quest-flag state all survive a real page reload and an area transition correctly. Zero console/page errors across both passes.

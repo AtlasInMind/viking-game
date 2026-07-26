@@ -20,3 +20,6 @@ mono_crash.*.json
 # System/tool-specific ignores
 .DS_Store
 Thumbs.db
+
+# itch.io publishing CLI (downloaded binary, not source - see docs/deployment.md)
+/.tools/
