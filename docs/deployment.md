@@ -39,6 +39,14 @@ This is a manual process, not yet automated via GitHub Actions — worth revisit
 
 2026-07-25 — live URL loads, playable (movement/collision/camera confirmed via a scripted Playwright pass), zero console errors.
 
+## Act 1 full playtest (issue #23, 2026-07-26)
+
+Per `docs/PROJECT_VISION.md`'s verification strategy ("structured playtest each milestone... log findings as issues"), Act 1 was played start-to-finish twice against a locally-served `--export-release` web build (not just the editor), driven with Playwright/Chromium: once following only the main quest thread, once also pursuing side content (the cairn subplot and its "hold still" challenge encounter - both success and fail/retry paths, the carved-token pickup and Ingrid's reactive line, and the cross-NPC `asked_about_cairn` flag). Both areas (village and the returned longship) were covered, with save/reload exercised at three points in each pass (mid-village, on the ship, and after Act 1's resolution beat), confirming position, inventory, and quest-flag state all survive a real page reload and an area transition correctly. Zero console/page errors across both passes.
+
+No fixes were needed - every interaction, dialogue branch, gate/item check, area transition, and challenge encounter (including the ship's own memory encounter, success and fail/retry) behaved exactly as coded. One discoverability gap was found and filed as its own follow-up (issue #25) rather than patched inline, since it's a content/design call: the hint text never points the player back to `water_npc` for the rusted key needed to pass the south gate.
+
+No external testers were available for this pass; self-playtest was the fallback, consistent with M1/M2.
+
 ## Note: release-export audio had an unexplained flaky episode (2026-07-26)
 
 Verifying issue #14's audio direction, the `--export-release` build produced by the redeploy steps above was consistently silent (no audio at all, zero console/page errors) across roughly a dozen varied test runs. Substantial further retesting afterward (26 consecutive runs, same real build, same real interaction path) played audio correctly every time, with no code changes in between. The earlier failures couldn't be reproduced again despite trying, and no root cause was confirmed — see `docs/DECISIONS.md`'s audio-decision addendum (2026-07-26) for the full investigation. Currently verified working, but given the unexplained flakiness, a real-device/real-browser spot-check of audio before any actual public release is worthwhile due diligence, not just a formality.
