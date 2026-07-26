@@ -43,10 +43,6 @@ const NPC_SCENE := preload("res://scenes/npc.tscn")
 ## not just an NPC remembering its own conversation.
 const FLAG_ASKED_ABOUT_CAIRN := "asked_about_cairn"
 
-## Set the first time the player talks to Hakon (issue #20) - Thora's line
-## reacts to it the same cross-NPC way FLAG_ASKED_ABOUT_CAIRN already does.
-const FLAG_MET_HAKON := "met_hakon"
-
 ## Act 1's cast (issue #20, see docs/WORLD_BIBLE.md "One Man Remains") -
 ## placed where each person's presence actually makes sense, not just
 ## wherever the map had room. Gunnar is on the ship (see ship.gd), the
@@ -56,21 +52,28 @@ const FLAG_MET_HAKON := "met_hakon"
 ## wide, and issue #10 needs the player able to walk past them to reach
 ## the trigger cell further north), facing east toward it. water_npc
 ## stands beside the pond - both are unnamed village texture predating
-## the story decision and are left as-is.
+## the story decision and are left as-is, except water_npc's dialogue
+## (issue #21), which now also carries the main quest's item/gate step.
+##
+## Line order matters (see QuestFlags/npc.gd) - Hakon's and water_npc's
+## most-progressed condition is listed first so a later quest state isn't
+## shadowed by an earlier one still being checked first.
 const NPC_PLACEMENTS := [
 	{"id": "cairn_npc", "cell": Vector2i(PATH_X - 1, 3), "facing": "side", "lines": [
 		{"flag": "", "text": "The path north leads up toward the old cairn, if the weather holds."},
 	]},
 	{"id": "water_npc", "cell": Vector2i(7, 12), "facing": "down", "lines": [
+		{"flag": QuestFlags.MET_HAKON, "value": true, "text": "The old rockslide still blocks the way to the ship - here, take this, it should lever it aside. Bring back whatever you find."},
 		{"flag": FLAG_ASKED_ABOUT_CAIRN, "value": true, "text": "Asking about the cairn again? Some say lights move up there at night."},
 		{"flag": "", "text": "Careful near the water after dark. My grandmother never let us go near it then."},
 	]},
 	{"id": "hakon", "cell": Vector2i(8, 6), "facing": "down", "lines": [
-		{"flag": FLAG_MET_HAKON, "value": true, "text": "Ask Gunnar about the cargo, if you want to know I'm not imagining things. I can't tell you where we went. I wish I could."},
+		{"flag": QuestFlags.MEMORY_SURFACED, "value": true, "text": "You felt it too, then. That's why none of us wanted to come home and say it plain."},
+		{"flag": QuestFlags.MET_HAKON, "value": true, "text": "Ask Gunnar about the cargo, if you want to know I'm not imagining things. I can't tell you where we went. I wish I could."},
 		{"flag": "", "text": "I keep telling them - we never left the fjord. But my hands don't believe me. Look how the salt's worked into them."},
 	]},
 	{"id": "thora", "cell": Vector2i(5, 7), "facing": "side", "facing_right": true, "lines": [
-		{"flag": FLAG_MET_HAKON, "value": true, "text": "Did he say my Ivar's name? Even once?"},
+		{"flag": QuestFlags.MET_HAKON, "value": true, "text": "Did he say my Ivar's name? Even once?"},
 		{"flag": "", "text": "My boy rowed on that ship. Hakon lived. Go on, ask him something - anything. I can't."},
 	]},
 	{"id": "steinar", "cell": Vector2i(21, 6), "facing": "down", "lines": [
@@ -112,6 +115,7 @@ const SHIP_ENTRY_CELL := Vector2i(8, 7)
 @onready var _cairn_encounter: Node2D = $CairnEncounter
 @onready var _dialogue: DialogueBox = $UI/DialogueBox
 @onready var _inventory_ui: InventoryUI = $UI/InventoryUI
+@onready var _hint: Label = $UI/Hint
 
 var _occupied_cells: Dictionary = {}
 var _npcs_by_id: Dictionary = {}
@@ -139,6 +143,8 @@ func _ready() -> void:
 	_cairn_encounter.initialize(_player, CAIRN_TRIGGER_CELL, CAIRN_PUSH_BACK_CELL, WorldState.get_flag(FLAG_CAIRN_LIGHT_PASSED))
 	_cairn_encounter.succeeded.connect(_on_cairn_encounter_succeeded)
 	_cairn_encounter.failed.connect(_on_cairn_encounter_failed)
+
+	_update_hint()
 
 
 ## Continue (see title_screen.gd) sets SaveSystem.pending_load before
@@ -188,7 +194,28 @@ func _on_player_moved(grid_pos: Vector2i) -> void:
 ## the resulting state change survives a reload.
 func _on_flag_changed(_flag: String, _value: Variant) -> void:
 	_refresh_gate_tile()
+	_update_hint()
 	_save_state()
+
+
+## Act 1's minimal "what to do next" (issue #21) - a trailing clause on
+## the existing controls Hint rather than a separate quest-log/journal,
+## which is explicitly out of scope until M4. Checked most-progressed
+## state first, same ordering discipline as the NPC dialogue_lines this
+## mirrors, so an earlier state doesn't shadow a later one.
+func _update_hint() -> void:
+	var objective: String
+	if WorldState.get_flag(QuestFlags.ACT_ONE_RESOLVED):
+		objective = "For now, the rest stays buried with the ship."
+	elif WorldState.get_flag(QuestFlags.MEMORY_SURFACED):
+		objective = "Go back and tell Hakon what you saw."
+	elif WorldState.get_flag(QuestFlags.TALKED_TO_GUNNAR):
+		objective = "Something about the ship doesn't sit right. Look around it."
+	elif WorldState.get_flag(QuestFlags.MET_HAKON):
+		objective = "Find Gunnar and ask about the ship's cargo."
+	else:
+		objective = "Find out what happened to the crew. Start with Hakon."
+	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory\n%s" % objective
 
 
 ## GATE (issue #18) can be flag-gated as well as item-gated, so both
@@ -275,8 +302,9 @@ func _process_interact() -> void:
 		if npc == _npcs_by_id.get("cairn_npc"):
 			WorldState.set_flag(FLAG_ASKED_ABOUT_CAIRN, true)
 			# Placeholder items proving issue #17's inventory system
-			# end-to-end, granted via an existing interaction rather than
-			# new world content - not real Act 1 items, see #21.
+			# end-to-end - #21 deliberately left this cairn subplot as
+			# optional village texture rather than folding it into the
+			# main quest thread; see #22 for real secrets/collectibles.
 			Inventory.add_item("placeholder_charm")
 			Inventory.add_item("placeholder_stone")
 			# set_flag() above already triggered one _save_state() via
@@ -285,15 +313,21 @@ func _process_interact() -> void:
 			# rather than only on the player's next step.
 			_save_state()
 		elif npc == _npcs_by_id.get("water_npc"):
-			# Placeholder key proving issue #18's progression gate - not
-			# real Act 1 content, see #21.
-			Inventory.add_item("rusted_key")
-			_save_state()
+			# The rusted key is the main quest's real item/gate step
+			# (issue #21) - only offered once the player has a reason to
+			# want it (they've met Hakon and know the ship matters).
+			# Idempotent either way (Inventory.add_item no-ops if already
+			# held), so re-visiting water_npc afterward is harmless.
+			if WorldState.get_flag(QuestFlags.MET_HAKON):
+				Inventory.add_item("rusted_key")
+				_save_state()
 		elif npc == _npcs_by_id.get("hakon"):
-			# Thora's line reacts to this - _on_flag_changed() already
-			# saves, no extra call needed (unlike the two branches above,
-			# which also write to Inventory after the flag-triggered save).
-			WorldState.set_flag(FLAG_MET_HAKON, true)
+			WorldState.set_flag(QuestFlags.MET_HAKON, true)
+			# Act 1's resolution beat (issue #21): reporting back after
+			# the ship's memory encounter closes the thread. _on_flag_changed()
+			# already saves for both set_flag() calls here, no extra call needed.
+			if WorldState.get_flag(QuestFlags.MEMORY_SURFACED):
+				WorldState.set_flag(QuestFlags.ACT_ONE_RESOLVED, true)
 
 
 ## Toggling the inventory panel is mutually exclusive with dialogue - it

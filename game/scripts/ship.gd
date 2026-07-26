@@ -60,10 +60,27 @@ const NPC_PLACEMENTS := [
 	]},
 ]
 
+## The ship's own challenge-layer beat (issue #21) - the same "hold
+## still" mechanic issue #10 built (game/scripts/cairn_encounter.gd),
+## reused rather than reinvented (as the MemoryEncounter node instance in
+## ship.tscn, not instantiated here), reframed as a fragment of the
+## crew's own fear surfacing near where they stood. Placed at the deck's
+## far end from Gunnar/the gangplank, clear of SHELTER and the entry path.
+##
+## Deliberately ungated on QuestFlags.TALKED_TO_GUNNAR - purely spatial,
+## same as CAIRN_TRIGGER_CELL in main.gd has no prerequisite either.
+## Reaching it before talking to Gunnar skips the Hint's intermediate
+## nudge but nothing breaks; Act 1 is exploratory, not a hard gate on
+## visiting every beat in a fixed order.
+const MEMORY_TRIGGER_CELL := Vector2i(12, 4)
+const MEMORY_PUSH_BACK_CELL := Vector2i(10, 4)
+
 @onready var _ground: TileMapLayer = $Ground
 @onready var _player: Node2D = $Player
 @onready var _dialogue: DialogueBox = $UI/DialogueBox
 @onready var _inventory_ui: InventoryUI = $UI/InventoryUI
+@onready var _memory_encounter: Node2D = $MemoryEncounter
+@onready var _hint: Label = $UI/Hint
 
 var _occupied_cells: Dictionary = {}
 var _npcs_by_id: Dictionary = {}
@@ -94,6 +111,13 @@ func _ready() -> void:
 	var start := _resolve_start_position(SaveSystem.load_game())
 	_player.initialize(_ground, start, TILE_SIZE, SHIP_SIZE, _occupied_cells)
 	_player.moved.connect(_on_player_moved)
+	WorldState.flag_changed.connect(_on_flag_changed)
+
+	_memory_encounter.initialize(_player, MEMORY_TRIGGER_CELL, MEMORY_PUSH_BACK_CELL, WorldState.get_flag(QuestFlags.MEMORY_SURFACED))
+	_memory_encounter.succeeded.connect(_on_memory_encounter_succeeded)
+	_memory_encounter.failed.connect(_on_memory_encounter_failed)
+
+	_update_hint()
 
 
 func _place_npcs() -> void:
@@ -132,6 +156,40 @@ func _on_player_moved(grid_pos: Vector2i) -> void:
 		_transition_to(VILLAGE_SCENE_PATH, VILLAGE_ENTRY_CELL)
 		return
 	_save_state()
+
+
+func _on_flag_changed(_flag: String, _value: Variant) -> void:
+	_update_hint()
+	_save_state()
+
+
+## Mirrors main.gd's _update_hint() - same objective text and priority
+## order, so the hint reads consistently regardless of which area the
+## player is currently in.
+func _update_hint() -> void:
+	var objective: String
+	if WorldState.get_flag(QuestFlags.ACT_ONE_RESOLVED):
+		objective = "For now, the rest stays buried with the ship."
+	elif WorldState.get_flag(QuestFlags.MEMORY_SURFACED):
+		objective = "Go back and tell Hakon what you saw."
+	elif WorldState.get_flag(QuestFlags.TALKED_TO_GUNNAR):
+		objective = "Something about the ship doesn't sit right. Look around it."
+	elif WorldState.get_flag(QuestFlags.MET_HAKON):
+		objective = "Find Gunnar and ask about the ship's cargo."
+	else:
+		objective = "Find out what happened to the crew. Start with Hakon."
+	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory\n%s" % objective
+
+
+func _on_memory_encounter_succeeded() -> void:
+	WorldState.set_flag(QuestFlags.MEMORY_SURFACED, true)
+	_dialogue.open("For a moment you're not sure whose fear that was - yours, or someone else's, still standing on this deck.")
+	_player.set_input_enabled(false)
+
+
+func _on_memory_encounter_failed() -> void:
+	_dialogue.open("You flinch, and whatever it was slips back into the corner of your eye. Best to hold still, if you want to see it through.")
+	_player.set_input_enabled(false)
 
 
 func _save_state() -> void:
@@ -185,6 +243,8 @@ func _process_interact() -> void:
 	if npc and npc.has_method("get_dialogue_text"):
 		_dialogue.open(npc.get_dialogue_text())
 		_player.set_input_enabled(false)
+		if npc == _npcs_by_id.get("gunnar"):
+			WorldState.set_flag(QuestFlags.TALKED_TO_GUNNAR, true)
 
 
 func _process_inventory_toggle() -> void:
