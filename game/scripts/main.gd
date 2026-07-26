@@ -64,6 +64,12 @@ const FLAG_CAIRN_LIGHT_PASSED := "cairn_light_passed"
 const CAIRN_TRIGGER_CELL := Vector2i(PATH_X, 1)
 const CAIRN_PUSH_BACK_CELL := Vector2i(PATH_X, 3)
 
+## Progression gate prototype (issue #18): a rockslide-styled blocked cell
+## on the otherwise-empty path south of the crossroads, cleared once the
+## player holds GATE's required item. Placeholder gate/key proving the
+## mechanism works end-to-end - not real Act 1 content, see #21.
+const GATE: GateDefinition = preload("res://data/gates/south_gate.tres")
+
 @onready var _ground: TileMapLayer = $Ground
 @onready var _player: Node2D = $Player
 @onready var _cairn_encounter: Node2D = $CairnEncounter
@@ -74,6 +80,7 @@ var _occupied_cells: Dictionary = {}
 var _npcs_by_id: Dictionary = {}
 var _interact_was_pressed := false
 var _inventory_key_was_pressed := false
+var _tileset_source_id: int = -1
 
 
 func _ready() -> void:
@@ -82,14 +89,15 @@ func _ready() -> void:
 	# first frame instead of only updating reactively on the next change.
 	var save_data := _load_save_if_continuing()
 
-	var source_id := _build_tileset()
-	_build_map(source_id)
+	_tileset_source_id = _build_tileset()
+	_build_map(_tileset_source_id)
 	_place_npcs()
 
 	var start := _resolve_start_position(save_data)
 	_player.initialize(_ground, start, TILE_SIZE, MAP_SIZE, _occupied_cells)
 	_player.moved.connect(_on_player_moved)
 	WorldState.flag_changed.connect(_on_flag_changed)
+	Inventory.item_added.connect(_on_item_added)
 
 	_cairn_encounter.initialize(_player, CAIRN_TRIGGER_CELL, CAIRN_PUSH_BACK_CELL, WorldState.get_flag(FLAG_CAIRN_LIGHT_PASSED))
 	_cairn_encounter.succeeded.connect(_on_cairn_encounter_succeeded)
@@ -143,7 +151,20 @@ func _on_flag_changed(flag: String, value: Variant) -> void:
 		var water_npc: Variant = _npcs_by_id.get("water_npc")
 		if water_npc:
 			water_npc.dialogue_text = WATER_NPC_FOLLOWUP_TEXT
+	_refresh_gate_tile()
 	_save_state()
+
+
+## GATE (issue #18) can be flag-gated as well as item-gated, so both
+## Inventory.item_added and WorldState.flag_changed refresh it live - not
+## just at map-build time - in case the unlock condition is met mid-play
+## rather than already true when a continued save's map first builds.
+func _on_item_added(_id: String) -> void:
+	_refresh_gate_tile()
+
+
+func _refresh_gate_tile() -> void:
+	_ground.set_cell(GATE.cell, _tileset_source_id, Vector2i(_tile_for(GATE.cell), 0))
 
 
 func _on_cairn_encounter_succeeded() -> void:
@@ -205,6 +226,11 @@ func _process_interact() -> void:
 			# _on_flag_changed(), but that ran before these items were
 			# added - save again so the grant survives immediately
 			# rather than only on the player's next step.
+			_save_state()
+		elif npc == _npcs_by_id.get("water_npc"):
+			# Placeholder key proving issue #18's progression gate - not
+			# real Act 1 content, see #21.
+			Inventory.add_item("rusted_key")
 			_save_state()
 
 
@@ -303,6 +329,8 @@ func _tile_for(cell: Vector2i) -> int:
 		return TILE_ROOF
 	if HOUSE_A_WALL.has_point(cell) or HOUSE_B_WALL.has_point(cell):
 		return TILE_WALL
+	if cell == GATE.cell:
+		return TILE_PATH if GATE.is_unlocked() else TILE_WALL
 	if cell.x == PATH_X or cell.y == PATH_Y:
 		return TILE_PATH
 	if (cell.x + cell.y) % 5 == 0:

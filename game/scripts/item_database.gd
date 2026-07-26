@@ -10,6 +10,7 @@ extends Node
 const ITEMS: Array[Item] = [
 	preload("res://data/items/placeholder_charm.tres"),
 	preload("res://data/items/placeholder_stone.tres"),
+	preload("res://data/items/rusted_key.tres"),
 ]
 
 var _by_id: Dictionary = {}
