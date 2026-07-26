@@ -4,7 +4,7 @@
 
 A **Pokemon-scale exploration/story RPG** for the browser, built in Godot with GDScript: grid-based overworld movement, tile-based maps, readable premium pixel art, a light challenge layer instead of a full battle system. "Pokemon-scale" means *length* (15-25h+ across many regions), not the creature-collection mechanic — see `docs/PROJECT_VISION.md` for the full picture and `docs/DECISIONS.md` for how these calls were made. **Primary platform is web (browser)**; a desktop build and mobile ports are open decisions for later milestones, not commitments — see `docs/PROJECT_VISION.md`.
 
-This is a solo project (one developer + AI-assisted engineering) with no cash budget — that constraint shapes the whole roadmap (content shipped in acts, pipelines over bespoke work; see `docs/PROJECT_VISION.md` "The honest scope reality"). Genre, combat approach, art-production method, team/budget, publishing target, and setting/tone are decided (`docs/DECISIONS.md`) — the actual setting, story, and cast are **not**; don't invent lore/setting details and treat them as established. If a decision is needed to move a task forward, make the smallest reasonable choice and record it, or ask.
+This is a solo project (one developer + AI-assisted engineering) with no cash budget — that constraint shapes the whole roadmap (content shipped in acts, pipelines over bespoke work; see `docs/PROJECT_VISION.md` "The honest scope reality"). Genre, combat approach, art-production method, team/budget, publishing target, and setting/tone are decided (`docs/DECISIONS.md`); Act 1's actual setting, story, and cast are decided too as of issue #16 — see `docs/WORLD_BIBLE.md`, and don't treat its explicitly-flagged open items (or anything beyond Act 1) as established. If a decision is needed to move a task forward, make the smallest reasonable choice and record it, or ask.
 
 Placeholder art/audio is expected and fine early on — the current tileset and character sprite were generated programmatically (see `game/assets/`) purely to make the scaffold playable and demonstrable in a browser. M2 exists specifically to replace ad-hoc placeholder generation with a real art bible + production pipeline; don't block gameplay/systems work on having final assets before then.
 
@@ -12,7 +12,8 @@ Placeholder art/audio is expected and fine early on — the current tileset and 
 
 1. `docs/PROJECT_VISION.md` — what the project is, the milestone roadmap, and why it's shaped the way it is.
 2. `docs/DECISIONS.md` — decisions made so far, with rationale.
-3. `README.md` — how to open/run/export the project.
+3. `docs/WORLD_BIBLE.md` — the actual Act 1 setting, story, and cast, once working on story/content tasks.
+4. `README.md` — how to open/run/export the project.
 
 Don't rely on prior conversation context or Claude's memory — everything load-bearing should be in `docs/`. If something important is missing there, it hasn't been established yet.
 
@@ -38,7 +39,7 @@ If an issue is labeled `epic`, it hasn't been detailed yet — break it into con
 ## Project structure
 
 - `game/` — the Godot project (kept separate from repo-root docs/planning). See `README.md` for the full folder breakdown and how to open/run/export it.
-- `docs/` — `PROJECT_VISION.md`, `DECISIONS.md`, `deployment.md`, `ART_BIBLE.md` today. `WORLD_BIBLE.md` (as setting/story get decided) will join these. Don't assume other documents exist beyond what's actually there.
+- `docs/` — `PROJECT_VISION.md`, `DECISIONS.md`, `deployment.md`, `ART_BIBLE.md`, `WORLD_BIBLE.md`. Don't assume other documents exist beyond what's actually there.
 - `tools/art/` — procedural art-pipeline tooling (palette, shading, validation) enforcing `docs/ART_BIBLE.md`; see `tools/art/README.md`. Support code, not the game itself - `game/assets/` still holds the actual imported files.
 
 ## Maintaining documentation

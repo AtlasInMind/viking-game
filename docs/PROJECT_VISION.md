@@ -36,7 +36,7 @@ A strong publishable demo is realistically a few months of steady part-time work
 - Careful, non-stereotyping treatment of Sámi history and presence if/when the setting touches that region — see `norse-game`'s `authenticity_and_sensitive_topics.md` §2.7 for the standard to meet.
 - Historical grounding held *internally* (writers should know what's fact vs. plausible reconstruction vs. legend) but never displayed to the player as citations/certainty tags — myth shows up as belief, not footnotes.
 
-This project's own setting, story, and characters are still undecided beyond this tonal stance — see "What's not decided yet" below.
+This project's own setting, story, and characters are decided as of issue #16 — see `docs/WORLD_BIBLE.md` for the actual Act 1 setting/story/cast, and "What's not decided yet" below for what's still open.
 
 ## Milestone roadmap
 
@@ -62,7 +62,7 @@ The single most important milestone given the project's stated priority. Art her
 Audio follows the same logic: also **procedural** (Python/numpy-synthesized SFX, e.g. the dialogue-open chime), not AI-generated or externally sourced, for the same reason — see `docs/DECISIONS.md` ("Audio production: procedural synthesis, following the art precedent"). Expected to stay SFX/ambience-focused rather than deliver a full musical score.
 
 ### M3 — Publishable demo (Act 1)
-M1 expanded into a self-contained 1–2h story arc, released publicly (itch.io + web) with a devlog started. Needs inventory/items and progression gating (item/ability/story-flag gates — the "HM" equivalent) on top of M1's systems.
+M1 expanded into a self-contained 1–2h story arc, released publicly (itch.io + web) with a devlog started. Needs inventory/items and progression gating (item/ability/story-flag gates — the "HM" equivalent) on top of M1's systems. Act 1's actual setting/story/cast ("One Man Remains") is recorded in `docs/WORLD_BIBLE.md` — see `docs/DECISIONS.md` 2026-07-26 for how that was decided.
 
 ### M4 — Long-game systems & depth
 Everything a 20h+ game needs that a demo can fake: cutscene/dialogue-scripting for story beats, journal/quest-log/world-map/fast-travel, accessibility (remappable input, text size, colourblind-safe palette, touch controls), asset-budget/atlasing/lazy-loading for web payload management (measured using `norse-game`'s documented methodology), and a decision on whether to also offer a downloadable desktop build for the full-length game.
@@ -80,10 +80,11 @@ Full-playthrough passes, pacing/balance, bug-fix bar, final performance pass, st
 
 Deliberately open — don't invent and treat as established:
 
-- The actual setting specifics: which coastline/region, what the central mystery/story is, who the cast are.
-- The exact form of the "light challenge layer" mechanic (puzzle? tense/stealth encounter? something else?) — to be prototyped and chosen in M1.
+- Several Act 1 specifics deliberately left open in `docs/WORLD_BIBLE.md`'s "Open / deliberately undecided" section (the player's exact relationship to the missing crew, which named cast members Act 1 actually needs, a real-world-adjacent name for the setting, and — by design, not an oversight — what actually fractured the expedition).
 - Whether a desktop build ships alongside the web version (M4 decision point).
 - Whether mobile ports happen at all (M7 decision point, revisited once the game exists).
+
+(The exact form of the light challenge layer was resolved in M1 — see `docs/DECISIONS.md`'s 2026-07-25 challenge-layer entry.)
 
 ## Key risks & mitigations
 
