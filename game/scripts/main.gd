@@ -221,6 +221,16 @@ func _on_flag_changed(_flag: String, _value: Variant) -> void:
 ## which is explicitly out of scope until M4. Checked most-progressed
 ## state first, same ordering discipline as the NPC dialogue_lines this
 ## mirrors, so an earlier state doesn't shadow a later one.
+##
+## The MET_HAKON branch checks GATE.is_unlocked() (issue #25) rather than
+## jumping straight to "find Gunnar" - without it, a player who hasn't
+## happened back onto water_npc near the pond would find the south gate
+## locked with no textual pointer back to it, since water_npc is the only
+## source of GATE.required_item_id and nothing else mentions it. Deferring
+## to is_unlocked() rather than re-checking Inventory.has_item() directly
+## matters if GATE ever also gets a required_flag - that's the one method
+## _tile_for() itself trusts as the actual unlock condition, so the hint
+## can't silently drift out of sync with what's physically blocking the path.
 func _update_hint() -> void:
 	var objective: String
 	if WorldState.get_flag(QuestFlags.ACT_ONE_RESOLVED):
@@ -230,7 +240,10 @@ func _update_hint() -> void:
 	elif WorldState.get_flag(QuestFlags.TALKED_TO_GUNNAR):
 		objective = "Something about the ship doesn't sit right. Look around it."
 	elif WorldState.get_flag(QuestFlags.MET_HAKON):
-		objective = "Find Gunnar and ask about the ship's cargo."
+		if GATE.is_unlocked():
+			objective = "Find Gunnar and ask about the ship's cargo."
+		else:
+			objective = "A rockslide still blocks the path south - ask around near the water for a way past it."
 	else:
 		objective = "Find out what happened to the crew. Start with Hakon."
 	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory\n%s" % objective
@@ -240,8 +253,13 @@ func _update_hint() -> void:
 ## Inventory.item_added and WorldState.flag_changed refresh it live - not
 ## just at map-build time - in case the unlock condition is met mid-play
 ## rather than already true when a continued save's map first builds.
+## _update_hint() needs the same live refresh (issue #25) now that its
+## MET_HAKON branch also reads Inventory state, not just flags - without
+## this, picking up the rusted key wouldn't update the hint until the next
+## unrelated flag change happened to fire it.
 func _on_item_added(_id: String) -> void:
 	_refresh_gate_tile()
+	_update_hint()
 
 
 func _refresh_gate_tile() -> void:

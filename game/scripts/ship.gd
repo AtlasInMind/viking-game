@@ -165,7 +165,11 @@ func _on_flag_changed(_flag: String, _value: Variant) -> void:
 
 ## Mirrors main.gd's _update_hint() - same objective text and priority
 ## order, so the hint reads consistently regardless of which area the
-## player is currently in.
+## player is currently in. One branch doesn't need mirroring (issue #25):
+## main.gd's MET_HAKON branch checks whether the player has GATE's item yet,
+## since water_npc (the only source of it) is easy to miss - but GATE is
+## what blocks the village's south path in the first place, so reaching
+## this scene at all already means that check has passed.
 func _update_hint() -> void:
 	var objective: String
 	if WorldState.get_flag(QuestFlags.ACT_ONE_RESOLVED):
