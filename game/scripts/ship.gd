@@ -31,22 +31,26 @@ const DECK := Rect2i(3, 2, 12, 4)
 ## empty box.
 const SHELTER := Rect2i(5, 3, 2, 1)
 
+## This scene's own id in AreaRegistry (issue #30) - see main.gd's AREA_ID
+## for the full reasoning.
+const AREA_ID := AreaRegistry.SHIP
+
 ## The one way on/off the ship: a gap in the hull's south wall (row 6)
 ## continuing south as a gangplank across open water down to the return
-## trigger. VILLAGE_ENTRY_CELL must match main.gd's TRANSITION_TO_SHIP_CELL
-## neighbor - see the matching note in main.gd's SHIP_ENTRY_CELL.
+## trigger. The village's scene/entry cell now resolve through AreaRegistry
+## (issue #30) instead of a locally-hardcoded VILLAGE_ENTRY_CELL - see that
+## file for why.
 const GANGPLANK_X := 8
 const GANGPLANK_START_Y := 6
 const RETURN_TO_VILLAGE_CELL := Vector2i(GANGPLANK_X, SHIP_SIZE.y - 1)
-const VILLAGE_SCENE_PATH := "res://scenes/main.tscn"
-const VILLAGE_ENTRY_CELL := Vector2i(15, 16)
 
-## Must match main.gd's SHIP_ENTRY_CELL - this is where the player lands
-## when arriving from the village. It's also this scene's own fallback
-## for missing/invalid save data (see _resolve_start_position()): unlike
-## VILLAGE_ENTRY_CELL (a village-space coordinate, only ever valid as an
-## argument to main.gd's own _transition_to()), this one is in this
-## scene's own coordinate space, so a fallback can safely use it.
+## Must match AreaRegistry.SHIP's entry_cell - this is where the player
+## lands when arriving from the village. It's also this scene's own
+## fallback for missing/invalid save data (see _resolve_start_position()):
+## unlike AreaRegistry.VILLAGE's entry_cell (a village-space coordinate,
+## only ever valid as an argument to main.gd's own _transition_to()), this
+## one is in this scene's own coordinate space, so a fallback can safely
+## use it.
 const DEFAULT_ENTRY_CELL := Vector2i(GANGPLANK_X, GANGPLANK_START_Y + 1)
 
 const NPC_SCENE := preload("res://scenes/npc.tscn")
@@ -80,6 +84,7 @@ const MEMORY_PUSH_BACK_CELL := Vector2i(10, 4)
 @onready var _dialogue: DialogueBox = $UI/DialogueBox
 @onready var _inventory_ui: InventoryUI = $UI/InventoryUI
 @onready var _journal_ui: JournalUI = $UI/JournalUI
+@onready var _world_map_ui: WorldMapUI = $UI/WorldMapUI
 @onready var _memory_encounter: Node2D = $MemoryEncounter
 @onready var _hint: Label = $UI/Hint
 
@@ -88,6 +93,7 @@ var _npcs_by_id: Dictionary = {}
 var _interact_was_pressed := false
 var _inventory_key_was_pressed := false
 var _journal_key_was_pressed := false
+var _map_key_was_pressed := false
 var _tileset_source_id: int = -1
 
 
@@ -105,6 +111,8 @@ func _ready() -> void:
 			WorldState.from_dict(loaded["flags"])
 		if loaded.has("inventory") and loaded["inventory"] is Dictionary:
 			Inventory.from_dict(loaded["inventory"])
+		if loaded.has("world_map") and loaded["world_map"] is Dictionary:
+			WorldMap.from_dict(loaded["world_map"])
 
 	_tileset_source_id = _build_tileset()
 	_build_map(_tileset_source_id)
@@ -114,6 +122,13 @@ func _ready() -> void:
 	_player.initialize(_ground, start, TILE_SIZE, SHIP_SIZE, _occupied_cells)
 	_player.moved.connect(_on_player_moved)
 	WorldState.flag_changed.connect(_on_flag_changed)
+	_world_map_ui.travel_requested.connect(_on_travel_requested)
+
+	# See main.gd's identical block for why this is idempotent-safe and
+	# saved immediately.
+	if not WorldMap.is_visited(AREA_ID):
+		WorldMap.mark_visited(AREA_ID)
+		_save_state()
 
 	_memory_encounter.initialize(_player, MEMORY_TRIGGER_CELL, MEMORY_PUSH_BACK_CELL, WorldState.get_flag(QuestFlags.MEMORY_SURFACED))
 	_memory_encounter.succeeded.connect(_on_memory_encounter_succeeded)
@@ -155,7 +170,7 @@ func _resolve_start_position(data: Dictionary) -> Vector2i:
 
 func _on_player_moved(grid_pos: Vector2i) -> void:
 	if grid_pos == RETURN_TO_VILLAGE_CELL:
-		_transition_to(VILLAGE_SCENE_PATH, VILLAGE_ENTRY_CELL)
+		_transition_to_area(AreaRegistry.VILLAGE)
 		return
 	_save_state()
 
@@ -172,7 +187,7 @@ func _on_flag_changed(_flag: String, _value: Variant) -> void:
 ## exact same QuestLog.get_current_objective(), so there's no divergent
 ## logic left to keep in sync by hand.
 func _update_hint() -> void:
-	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory, J for journal\n%s" % QuestLog.get_current_objective()
+	_hint.text = "Arrow keys or WASD to move, Space to talk, I for inventory, J for journal, M for map\n%s" % QuestLog.get_current_objective()
 
 
 func _on_memory_encounter_succeeded() -> void:
@@ -192,6 +207,7 @@ func _save_state() -> void:
 	data["player_y"] = _player.get_grid_pos().y
 	data["flags"] = WorldState.to_dict()
 	data["inventory"] = Inventory.to_dict()
+	data["world_map"] = WorldMap.to_dict()
 	data["current_scene"] = scene_file_path
 	SaveSystem.save_game(data)
 
@@ -204,16 +220,29 @@ func _transition_to(target_scene: String, entry_cell: Vector2i) -> void:
 	data["player_y"] = entry_cell.y
 	data["flags"] = WorldState.to_dict()
 	data["inventory"] = Inventory.to_dict()
+	data["world_map"] = WorldMap.to_dict()
 	data["current_scene"] = target_scene
 	SaveSystem.save_game(data)
 	SaveSystem.pending_load = true
 	get_tree().change_scene_to_file(target_scene)
 
 
+## See main.gd's _transition_to_area() for the full reasoning - identical
+## pattern, mirrored here rather than shared, same as _transition_to() above.
+func _transition_to_area(area_id: String) -> void:
+	var area := AreaRegistry.get_area(area_id)
+	_transition_to(area["scene_path"], area["entry_cell"])
+
+
+func _on_travel_requested(area_id: String) -> void:
+	_transition_to_area(area_id)
+
+
 func _process(_delta: float) -> void:
 	_process_interact()
 	_process_inventory_toggle()
 	_process_journal_toggle()
+	_process_map_toggle()
 
 
 ## Mirrors main.gd's _process_interact(), trimmed - no items/gates/quest
@@ -222,7 +251,7 @@ func _process_interact() -> void:
 	var interact_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
 	var just_pressed := interact_pressed and not _interact_was_pressed
 	_interact_was_pressed = interact_pressed
-	if not just_pressed or _inventory_ui.is_open() or _journal_ui.is_open():
+	if not just_pressed or _inventory_ui.is_open() or _journal_ui.is_open() or _world_map_ui.is_open():
 		return
 
 	if _dialogue.is_open():
@@ -246,7 +275,7 @@ func _process_inventory_toggle() -> void:
 	var inventory_key_pressed := Input.is_key_pressed(KEY_I)
 	var just_pressed := inventory_key_pressed and not _inventory_key_was_pressed
 	_inventory_key_was_pressed = inventory_key_pressed
-	if not just_pressed or _dialogue.is_open() or _journal_ui.is_open():
+	if not just_pressed or _dialogue.is_open() or _journal_ui.is_open() or _world_map_ui.is_open():
 		return
 
 	if _inventory_ui.is_open():
@@ -266,7 +295,7 @@ func _process_journal_toggle() -> void:
 	var journal_key_pressed := Input.is_key_pressed(KEY_J)
 	var just_pressed := journal_key_pressed and not _journal_key_was_pressed
 	_journal_key_was_pressed = journal_key_pressed
-	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open():
+	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _world_map_ui.is_open():
 		return
 
 	if _journal_ui.is_open():
@@ -278,6 +307,26 @@ func _process_journal_toggle() -> void:
 		return
 
 	_journal_ui.open()
+	_player.set_input_enabled(false)
+
+
+## Mirrors _process_inventory_toggle()/_process_journal_toggle() (issue #30).
+func _process_map_toggle() -> void:
+	var map_key_pressed := Input.is_key_pressed(KEY_M)
+	var just_pressed := map_key_pressed and not _map_key_was_pressed
+	_map_key_was_pressed = map_key_pressed
+	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _journal_ui.is_open():
+		return
+
+	if _world_map_ui.is_open():
+		_world_map_ui.close()
+		_player.set_input_enabled(true)
+		return
+
+	if _player.is_moving():
+		return
+
+	_world_map_ui.open(AREA_ID)
 	_player.set_input_enabled(false)
 
 
