@@ -81,10 +81,9 @@ Full-playthrough passes, pacing/balance, bug-fix bar, final performance pass, st
 Deliberately open — don't invent and treat as established:
 
 - Several Act 1 specifics deliberately left open in `docs/WORLD_BIBLE.md`'s "Open / deliberately undecided" section (the player's exact relationship to the missing crew, which named cast members Act 1 actually needs, a real-world-adjacent name for the setting, and — by design, not an oversight — what actually fractured the expedition).
-- Whether a desktop build ships alongside the web version (M4 decision point).
 - Whether mobile ports happen at all (M7 decision point, revisited once the game exists).
 
-(The exact form of the light challenge layer was resolved in M1 — see `docs/DECISIONS.md`'s 2026-07-25 challenge-layer entry.)
+(The exact form of the light challenge layer was resolved in M1 — see `docs/DECISIONS.md`'s 2026-07-25 challenge-layer entry. Desktop build vs. web-only was resolved in M4 — see `docs/DECISIONS.md`'s 2026-07-26 platform entry: web-only for now, revisitable given a concrete future trigger.)
 
 ## Key risks & mitigations
 
