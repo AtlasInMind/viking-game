@@ -5,9 +5,9 @@ extends Node2D
 ## through the gap in the south treeline, past GATE. Mirrors main.gd's
 ## hand-authored map-building approach (issue #9) rather than inventing a
 ## new one: named Rects/points in code, a runtime-built TileMapLayer, no
-## Tiled/TileMap-editor authoring. Deliberately has no NPCs, dialogue, or
-## quest content yet - that's #20/#21's job; this issue is purely the
-## area existing and being reachable.
+## Tiled/TileMap-editor authoring. Gunnar (issue #20) is placed here
+## rather than in the village, examining the ship's own cargo - the one
+## place his line about it is actually true.
 
 const TILE_SIZE := 16
 const SHIP_SIZE := Vector2i(18, 9)
@@ -49,11 +49,25 @@ const VILLAGE_ENTRY_CELL := Vector2i(15, 16)
 ## scene's own coordinate space, so a fallback can safely use it.
 const DEFAULT_ENTRY_CELL := Vector2i(GANGPLANK_X, GANGPLANK_START_Y + 1)
 
+const NPC_SCENE := preload("res://scenes/npc.tscn")
+
+## Gunnar stands on deck near the shelter (not inside it - no interior
+## exists, same reasoning as main.gd's house roofs), examining the
+## recovered cargo stored there.
+const NPC_PLACEMENTS := [
+	{"id": "gunnar", "cell": Vector2i(7, 4), "facing": "up", "lines": [
+		{"flag": "", "text": "This oil, this cloth - none of it's from anywhere I've traded. Whoever they met on that voyage, it wasn't on any route I know."},
+	]},
+]
+
 @onready var _ground: TileMapLayer = $Ground
 @onready var _player: Node2D = $Player
+@onready var _dialogue: DialogueBox = $UI/DialogueBox
 @onready var _inventory_ui: InventoryUI = $UI/InventoryUI
 
 var _occupied_cells: Dictionary = {}
+var _npcs_by_id: Dictionary = {}
+var _interact_was_pressed := false
 var _inventory_key_was_pressed := false
 var _tileset_source_id: int = -1
 
@@ -75,10 +89,27 @@ func _ready() -> void:
 
 	_tileset_source_id = _build_tileset()
 	_build_map(_tileset_source_id)
+	_place_npcs()
 
 	var start := _resolve_start_position(SaveSystem.load_game())
 	_player.initialize(_ground, start, TILE_SIZE, SHIP_SIZE, _occupied_cells)
 	_player.moved.connect(_on_player_moved)
+
+
+func _place_npcs() -> void:
+	for placement in NPC_PLACEMENTS:
+		var npc := NPC_SCENE.instantiate()
+		add_child(npc)
+		npc.facing = placement["facing"]
+		npc.facing_right = placement.get("facing_right", true)
+		npc.dialogue_lines = placement["lines"]
+		npc.position = _grid_to_world(placement["cell"])
+		_occupied_cells[placement["cell"]] = npc
+		_npcs_by_id[placement["id"]] = npc
+
+
+func _grid_to_world(cell: Vector2i) -> Vector2:
+	return Vector2(cell.x * TILE_SIZE + TILE_SIZE / 2.0, cell.y * TILE_SIZE + TILE_SIZE)
 
 
 func _resolve_start_position(data: Dictionary) -> Vector2i:
@@ -128,10 +159,39 @@ func _transition_to(target_scene: String, entry_cell: Vector2i) -> void:
 
 
 func _process(_delta: float) -> void:
+	_process_interact()
+	_process_inventory_toggle()
+
+
+## Mirrors main.gd's _process_interact(), trimmed - no items/gates/quest
+## flags here yet, just NPC dialogue.
+func _process_interact() -> void:
+	var interact_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
+	var just_pressed := interact_pressed and not _interact_was_pressed
+	_interact_was_pressed = interact_pressed
+	if not just_pressed or _inventory_ui.is_open():
+		return
+
+	if _dialogue.is_open():
+		_dialogue.close()
+		_player.set_input_enabled(true)
+		return
+
+	if _player.is_moving():
+		return
+
+	var target: Vector2i = _player.get_grid_pos() + _player.get_facing_direction()
+	var npc: Variant = _occupied_cells.get(target)
+	if npc and npc.has_method("get_dialogue_text"):
+		_dialogue.open(npc.get_dialogue_text())
+		_player.set_input_enabled(false)
+
+
+func _process_inventory_toggle() -> void:
 	var inventory_key_pressed := Input.is_key_pressed(KEY_I)
 	var just_pressed := inventory_key_pressed and not _inventory_key_was_pressed
 	_inventory_key_was_pressed = inventory_key_pressed
-	if not just_pressed:
+	if not just_pressed or _dialogue.is_open():
 		return
 
 	if _inventory_ui.is_open():

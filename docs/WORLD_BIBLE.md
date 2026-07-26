@@ -30,7 +30,7 @@ Gradually, this reveals that the crew found another abandoned longship partway t
 - **Gunnar** — the settlement's trader. Recognizes foreign goods among the ship's cargo for what they are and roughly where they'd have come from, turning objects into geography and giving the investigation real direction.
 - **Solveig** — the settlement's elder, who sanctioned the original expedition. Holds the institutional memory of why it was sent out in the first place and carries the settlement's collective reaction (fear, suspicion, grief) as much as any personal stake.
 
-Six named cast plus Hakon-as-central-figure is deliberately a *small* cast, matching `docs/PROJECT_VISION.md`'s design intent — not every named character needs to be in Act 1's first playable version; #20 (cast/dialogue content) can decide which subset is actually necessary for a 1-2h demo versus held for later acts.
+Six named cast plus Hakon-as-central-figure is deliberately a *small* cast, matching `docs/PROJECT_VISION.md`'s design intent. Issue #20 placed all six in Act 1 rather than holding any back - the cast is small enough, and each person's placement (Hakon and Thora near the house he recovers in, Steinar near his family's house, Solveig and Ingrid near the crossroads, Gunnar on the ship itself examining the recovered cargo) gave every one of them a concrete reason to be exactly where they are, rather than needing to defer some to a later act for lack of a place to put them.
 
 ## Areas
 
@@ -47,8 +47,7 @@ Full intended geography for this story thread (not all required for Act 1 — se
 - The player's exact relationship to Hakon or the missing crew.
 - What actually fractured the expedition — intentionally left ambiguous, not a placeholder for "to be decided later and then revealed"; the ambiguity is the point, consistent with this project's myth-as-belief stance.
 - A real-world-adjacent name for the settlement/region, if one turns out to be useful — if that ever gets decided, whether the chosen placement would touch a real region with Sámi history needs checking *at that point*, per the "careful, non-stereotyping treatment of Sámi history and presence if/when the setting touches that region" standard `docs/PROJECT_VISION.md` and `CLAUDE.md` both already require. The current "fictionalized composite" framing sidesteps the question for now, not resolves it.
-- Which of the six named cast members Act 1 actually needs versus which are later-act material — for #20 to decide based on actual demo scope.
 
 ## Last updated
 
-2026-07-26 — initial version, following issue #16.
+2026-07-26 — initial version, following issue #16. Cast-placement question resolved (all six in Act 1), following issue #20.

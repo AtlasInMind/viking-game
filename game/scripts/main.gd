@@ -42,18 +42,46 @@ const NPC_SCENE := preload("res://scenes/npc.tscn")
 ## water NPC's dialogue - a flag changing behavior somewhere else entirely,
 ## not just an NPC remembering its own conversation.
 const FLAG_ASKED_ABOUT_CAIRN := "asked_about_cairn"
-const WATER_NPC_DEFAULT_TEXT := "Careful near the water after dark. My grandmother never let us go near it then."
-const WATER_NPC_FOLLOWUP_TEXT := "Asking about the cairn again? Some say lights move up there at night."
 
-## cairn_npc stands beside the road (not on it - the road is one tile wide,
-## and issue #10 needs the player able to walk past them to reach the
-## trigger cell further north), facing east toward it. water_npc stands
-## beside the pond. Both placed where their dialogue actually makes sense,
-## unlike the arbitrary path-adjacent spots the procedural map only had
-## room for.
+## Set the first time the player talks to Hakon (issue #20) - Thora's line
+## reacts to it the same cross-NPC way FLAG_ASKED_ABOUT_CAIRN already does.
+const FLAG_MET_HAKON := "met_hakon"
+
+## Act 1's cast (issue #20, see docs/WORLD_BIBLE.md "One Man Remains") -
+## placed where each person's presence actually makes sense, not just
+## wherever the map had room. Gunnar is on the ship (see ship.gd), the
+## one place his line about the cargo is actually true.
+##
+## cairn_npc stands beside the road (not on it - the road is one tile
+## wide, and issue #10 needs the player able to walk past them to reach
+## the trigger cell further north), facing east toward it. water_npc
+## stands beside the pond - both are unnamed village texture predating
+## the story decision and are left as-is.
 const NPC_PLACEMENTS := [
-	{"id": "cairn_npc", "cell": Vector2i(PATH_X - 1, 3), "facing": "side", "text": "The path north leads up toward the old cairn, if the weather holds."},
-	{"id": "water_npc", "cell": Vector2i(7, 12), "facing": "down", "text": WATER_NPC_DEFAULT_TEXT},
+	{"id": "cairn_npc", "cell": Vector2i(PATH_X - 1, 3), "facing": "side", "lines": [
+		{"flag": "", "text": "The path north leads up toward the old cairn, if the weather holds."},
+	]},
+	{"id": "water_npc", "cell": Vector2i(7, 12), "facing": "down", "lines": [
+		{"flag": FLAG_ASKED_ABOUT_CAIRN, "value": true, "text": "Asking about the cairn again? Some say lights move up there at night."},
+		{"flag": "", "text": "Careful near the water after dark. My grandmother never let us go near it then."},
+	]},
+	{"id": "hakon", "cell": Vector2i(8, 6), "facing": "down", "lines": [
+		{"flag": FLAG_MET_HAKON, "value": true, "text": "Ask Gunnar about the cargo, if you want to know I'm not imagining things. I can't tell you where we went. I wish I could."},
+		{"flag": "", "text": "I keep telling them - we never left the fjord. But my hands don't believe me. Look how the salt's worked into them."},
+	]},
+	{"id": "thora", "cell": Vector2i(5, 7), "facing": "side", "facing_right": true, "lines": [
+		{"flag": FLAG_MET_HAKON, "value": true, "text": "Did he say my Ivar's name? Even once?"},
+		{"flag": "", "text": "My boy rowed on that ship. Hakon lived. Go on, ask him something - anything. I can't."},
+	]},
+	{"id": "steinar", "cell": Vector2i(21, 6), "facing": "down", "lines": [
+		{"flag": "", "text": "My brother led that crew out. Now everyone wants to know why only one came back, and somehow that's mine to answer."},
+	]},
+	{"id": "solveig", "cell": Vector2i(13, 8), "facing": "side", "facing_right": true, "lines": [
+		{"flag": "", "text": "I gave the order to send them out. If that was wrong, it's mine to carry, not the crew's kin."},
+	]},
+	{"id": "ingrid", "cell": Vector2i(18, 8), "facing": "side", "facing_right": false, "lines": [
+		{"flag": "", "text": "He told me, the night before they left, that if the weather turned bad he'd rather we never spoke again than write me a letter I'd have to bury with him. I didn't understand it then."},
+	]},
 ]
 
 ## Challenge-layer prototype (issue #10): stepping onto CAIRN_TRIGGER_CELL,
@@ -158,11 +186,7 @@ func _on_player_moved(grid_pos: Vector2i) -> void:
 ## Any flag change gets persisted immediately, not just on movement -
 ## talking to an NPC doesn't require the player to also take a step before
 ## the resulting state change survives a reload.
-func _on_flag_changed(flag: String, value: Variant) -> void:
-	if flag == FLAG_ASKED_ABOUT_CAIRN and value:
-		var water_npc: Variant = _npcs_by_id.get("water_npc")
-		if water_npc:
-			water_npc.dialogue_text = WATER_NPC_FOLLOWUP_TEXT
+func _on_flag_changed(_flag: String, _value: Variant) -> void:
 	_refresh_gate_tile()
 	_save_state()
 
@@ -265,6 +289,11 @@ func _process_interact() -> void:
 			# real Act 1 content, see #21.
 			Inventory.add_item("rusted_key")
 			_save_state()
+		elif npc == _npcs_by_id.get("hakon"):
+			# Thora's line reacts to this - _on_flag_changed() already
+			# saves, no extra call needed (unlike the two branches above,
+			# which also write to Inventory after the flag-triggered save).
+			WorldState.set_flag(FLAG_MET_HAKON, true)
 
 
 ## Toggling the inventory panel is mutually exclusive with dialogue - it
@@ -294,18 +323,11 @@ func _place_npcs() -> void:
 		var npc := NPC_SCENE.instantiate()
 		add_child(npc)
 		npc.facing = placement["facing"]
-		npc.dialogue_text = placement["text"]
+		npc.facing_right = placement.get("facing_right", true)
+		npc.dialogue_lines = placement["lines"]
 		npc.position = _grid_to_world(placement["cell"])
 		_occupied_cells[placement["cell"]] = npc
 		_npcs_by_id[placement["id"]] = npc
-
-	# Reflect already-loaded WorldState (e.g. from a continued save)
-	# immediately, rather than waiting for a flag_changed signal that won't
-	# fire for state that was bulk-restored via WorldState.from_dict().
-	if WorldState.get_flag(FLAG_ASKED_ABOUT_CAIRN):
-		var water_npc: Variant = _npcs_by_id.get("water_npc")
-		if water_npc:
-			water_npc.dialogue_text = WATER_NPC_FOLLOWUP_TEXT
 
 
 func _grid_to_world(cell: Vector2i) -> Vector2:
