@@ -43,9 +43,9 @@ This project's own setting, story, and characters are decided as of issue #16 �
 | Milestone | Theme | Public deliverable |
 |---|---|---|
 | **M0** | Foundation | Done — scaffold + live web deploy |
-| **M1** | Core systems vertical slice | A 15–30 min hand-crafted playable slice that *feels* premium |
-| **M2** | Art bible + production pipeline | Locked visual identity + tooling; M1 re-skinned to look cohesive |
-| **M3** | Publishable demo (Act 1) | First public itch.io + web release; devlog begins |
+| **M1** | Core systems vertical slice | Done — a hand-crafted playable slice: movement, NPCs/dialogue, save/load, quest-flag system, one authored map, first challenge-layer prototype |
+| **M2** | Art bible + production pipeline | Done — `docs/ART_BIBLE.md` + procedural palette/shading tooling; M1 re-skinned through it |
+| **M3** | Publishable demo (Act 1) | Done — "One Man Remains" live on itch.io + GitHub Pages, first devlog posted |
 | **M4** | Long-game systems & depth | Engine that can carry a 20h+ game |
 | **M5** | Content scaling (the long haul) | Full world built act-by-act via the pipeline |
 | **M6** | Polish, balance & launch prep | Store page, trailer, playtested release candidate |
@@ -105,3 +105,5 @@ Deliberately open — don't invent and treat as established:
 ## Last updated
 
 2026-07-25 — initial roadmap, following the M0 scaffold-and-deploy session.
+
+2026-07-26 — milestone table updated: M1, M2, and M3 all complete (Act 1 published to itch.io + GitHub Pages). M4 is next; not yet broken down into concrete issues.
