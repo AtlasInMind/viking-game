@@ -70,6 +70,15 @@ const CAIRN_PUSH_BACK_CELL := Vector2i(PATH_X, 3)
 ## mechanism works end-to-end - not real Act 1 content, see #21.
 const GATE: GateDefinition = preload("res://data/gates/south_gate.tres")
 
+## Area transition (issue #19): past the gate, the south path opens a gap
+## in the border treeline (see _tile_for()) leading to the returned
+## longship. SHIP_ENTRY_CELL must match ship.gd's own arrival point - the
+## two scenes don't share a lookup table since only one other area exists
+## yet (see docs/DECISIONS.md if a third area makes that worth building).
+const SHIP_SCENE_PATH := "res://scenes/ship.tscn"
+const TRANSITION_TO_SHIP_CELL := Vector2i(PATH_X, MAP_SIZE.y - 1)
+const SHIP_ENTRY_CELL := Vector2i(8, 7)
+
 @onready var _ground: TileMapLayer = $Ground
 @onready var _player: Node2D = $Player
 @onready var _cairn_encounter: Node2D = $CairnEncounter
@@ -139,7 +148,10 @@ func _resolve_start_position(data: Dictionary) -> Vector2i:
 	return loaded
 
 
-func _on_player_moved(_grid_pos: Vector2i) -> void:
+func _on_player_moved(grid_pos: Vector2i) -> void:
+	if grid_pos == TRANSITION_TO_SHIP_CELL:
+		_transition_to(SHIP_SCENE_PATH, SHIP_ENTRY_CELL)
+		return
 	_save_state()
 
 
@@ -187,7 +199,28 @@ func _save_state() -> void:
 	data["player_y"] = _player.get_grid_pos().y
 	data["flags"] = WorldState.to_dict()
 	data["inventory"] = Inventory.to_dict()
+	data["current_scene"] = scene_file_path
 	SaveSystem.save_game(data)
+
+
+## Area transitions (issue #19) write the arriving scene's entry cell as
+## the saved position and flip pending_load, reusing the exact same
+## "restore everything from disk" path _load_save_if_continuing() already
+## uses for a title-screen Continue - WorldState/Inventory are already
+## correct in memory (autoloads survive change_scene_to_file), so this
+## round-trip through disk is only there to fix the player's position
+## after the scene tree (and the old Player node) gets replaced, and to
+## make the new area durable across a later real page reload.
+func _transition_to(target_scene: String, entry_cell: Vector2i) -> void:
+	var data := SaveSystem.load_game()
+	data["player_x"] = entry_cell.x
+	data["player_y"] = entry_cell.y
+	data["flags"] = WorldState.to_dict()
+	data["inventory"] = Inventory.to_dict()
+	data["current_scene"] = target_scene
+	SaveSystem.save_game(data)
+	SaveSystem.pending_load = true
+	get_tree().change_scene_to_file(target_scene)
 
 
 func _process(_delta: float) -> void:
@@ -318,6 +351,10 @@ func _build_map(source_id: int) -> void:
 ## The only non-fixed choice is which grass variant renders, and that's a
 ## deterministic pattern (not randomness) purely for ground texture.
 func _tile_for(cell: Vector2i) -> int:
+	# Checked before the border/tree fallback deliberately - this is the one
+	# deliberate gap in the treeline, not an oversight.
+	if cell == TRANSITION_TO_SHIP_CELL:
+		return TILE_PATH
 	var on_border := cell.x == 0 or cell.y == 0 or cell.x == MAP_SIZE.x - 1 or cell.y == MAP_SIZE.y - 1
 	if on_border:
 		return TILE_TREE
@@ -329,8 +366,13 @@ func _tile_for(cell: Vector2i) -> int:
 		return TILE_ROOF
 	if HOUSE_A_WALL.has_point(cell) or HOUSE_B_WALL.has_point(cell):
 		return TILE_WALL
-	if cell == GATE.cell:
-		return TILE_PATH if GATE.is_unlocked() else TILE_WALL
+	# A single blocked cell in open grass would just be a walk-around, not
+	# a gate - GATE.cell.y is blocked wall-to-wall, with only GATE's own
+	# cell conditionally passable, an actual chokepoint (issue #19 review).
+	if cell.y == GATE.cell.y:
+		if cell.x == GATE.cell.x:
+			return TILE_PATH if GATE.is_unlocked() else TILE_WALL
+		return TILE_WALL
 	if cell.x == PATH_X or cell.y == PATH_Y:
 		return TILE_PATH
 	if (cell.x + cell.y) % 5 == 0:

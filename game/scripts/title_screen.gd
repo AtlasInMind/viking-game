@@ -18,6 +18,15 @@ func _on_start_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
+## A save can now point at any area (issue #19's area transitions stamp
+## their own scene into "current_scene", the same field this reads) - a
+## missing/invalid value defensively falls back to the village, the same
+## way _resolve_start_position() in main.gd falls back to the default
+## spawn on invalid position data.
 func _on_continue_pressed() -> void:
 	SaveSystem.pending_load = true
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	var data := SaveSystem.load_game()
+	var target_scene: Variant = data.get("current_scene", "res://scenes/main.tscn")
+	if not (target_scene is String) or not ResourceLoader.exists(target_scene):
+		target_scene = "res://scenes/main.tscn"
+	get_tree().change_scene_to_file(target_scene)
