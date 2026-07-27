@@ -1,0 +1,166 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/shoreline_camp.gd" id="1_shoreline"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/inventory_ui.gd" id="3_inventory"]
+[ext_resource type="Script" path="res://scripts/dialogue_box.gd" id="4_dialogue"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/dialogue_open.wav" id="5_dialogue_open_sfx"]
+[ext_resource type="Script" path="res://scripts/journal_ui.gd" id="6_journal"]
+[ext_resource type="Script" path="res://scripts/world_map_ui.gd" id="7_world_map"]
+[ext_resource type="Script" path="res://scripts/cutscene_player.gd" id="8_cutscene"]
+[ext_resource type="PackedScene" path="res://scenes/touch_controls.tscn" id="9_touch_controls"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_shoreline"]
+bg_color = Color(0.078, 0.067, 0.055, 0.94)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.85, 0.78, 0.6, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[node name="ShorelineCamp" type="Node2D"]
+script = ExtResource("1_shoreline")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+
+[node name="CutscenePlayer" type="Node" parent="."]
+script = ExtResource("8_cutscene")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Hint" type="Label" parent="UI"]
+offset_left = 8.0
+offset_top = 6.0
+offset_right = 460.0
+offset_bottom = 46.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 4
+autowrap_mode = 2
+text = "Arrow keys or WASD to move, Space to talk, I for inventory, J for journal"
+
+[node name="DialogueBox" type="Panel" parent="UI"]
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -70.0
+offset_right = -8.0
+offset_bottom = -8.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_shoreline")
+script = ExtResource("4_dialogue")
+
+[node name="SFX" type="AudioStreamPlayer" parent="UI/DialogueBox"]
+stream = ExtResource("5_dialogue_open_sfx")
+
+[node name="Label" type="Label" parent="UI/DialogueBox"]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+autowrap_mode = 2
+text = ""
+
+[node name="InventoryUI" type="Panel" parent="UI"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -80.0
+offset_right = 120.0
+offset_bottom = 80.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_shoreline")
+script = ExtResource("3_inventory")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="UI/InventoryUI"]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
+horizontal_scroll_mode = 0
+
+[node name="Label" type="Label" parent="UI/InventoryUI/ScrollContainer"]
+custom_minimum_size = Vector2(220, 0)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+autowrap_mode = 2
+text = ""
+
+[node name="JournalUI" type="Panel" parent="UI"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -230.0
+offset_top = -125.0
+offset_right = 230.0
+offset_bottom = 125.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_shoreline")
+script = ExtResource("6_journal")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="UI/JournalUI"]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
+horizontal_scroll_mode = 0
+
+[node name="Label" type="Label" parent="UI/JournalUI/ScrollContainer"]
+custom_minimum_size = Vector2(440, 0)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 3
+autowrap_mode = 2
+text = ""
+
+[node name="WorldMapUI" type="Panel" parent="UI"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -100.0
+offset_right = 140.0
+offset_bottom = 100.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_shoreline")
+script = ExtResource("7_world_map")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="UI/WorldMapUI"]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/WorldMapUI/ScrollContainer"]
+custom_minimum_size = Vector2(260, 0)
+
+[node name="TouchControls" parent="UI" instance=ExtResource("9_touch_controls")]

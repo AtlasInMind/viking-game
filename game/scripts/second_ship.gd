@@ -1,0 +1,304 @@
+extends Node2D
+
+## The second ship's wreck (issue #35) - Act 2's second new area and its
+## biggest single revelation-location, per docs/WORLD_BIBLE.md's "The
+## Second Ship": a different, older, unrelated longship, found abandoned
+## by Hakon's own crew mid-voyage. Mirrors ship.gd's hand-authored
+## map-building approach, deliberately reusing the exact same tile
+## vocabulary (TILE_PATH/TILE_WALL/TILE_ROOF/TILE_WATER) rather than
+## inventing new art for this issue - a BREACH rect (a gap in the hull,
+## open to water) is the one structural difference, reading as damage/decay
+## without needing new tile assets. No NPCs/dialogue/cutscene content yet
+## (issue #36/#37's job) - this issue is the walkable geography, reachable
+## on foot from the shoreline camp, and nothing beyond it yet (a dead end
+## for now; Act 2 doesn't need a third new area).
+
+const TILE_SIZE := 16
+const WRECK_SIZE := Vector2i(16, 10)
+
+## Same shared tile atlas/indices as main.gd/ship.gd's tileset.
+const TILE_PATH := 2
+const TILE_WATER := 4
+const TILE_WALL := 5
+const TILE_ROOF := 6
+
+## The hull's outer edge is every HULL cell not also in DECK, same
+## reasoning as ship.gd's own HULL/DECK pair.
+const HULL := Rect2i(1, 1, 14, 7)
+const DECK := Rect2i(2, 2, 12, 5)
+
+## A broken mast/wreckage pile on deck (roof tile, blocked - no interior,
+## same reasoning as ship.gd's SHELTER).
+const SHELTER := Rect2i(6, 3, 3, 1)
+
+## A gap in the west hull wall, open to the sea - the one visible sign this
+## ship has sat here far longer than Hakon's own. Checked before HULL so it
+## overrides that one section to TILE_WATER instead of TILE_WALL.
+const BREACH := Rect2i(1, 4, 1, 2)
+
+## This scene's own id in AreaRegistry (issue #30).
+const AREA_ID := AreaRegistry.SECOND_SHIP
+
+## The one way in/out: a gap in the hull's south wall continuing south to
+## the return trigger, mirroring ship.gd's own gangplank exactly.
+## ENTRY_CELL matches AreaRegistry.SECOND_SHIP's entry_cell (the canonical
+## arrival point, used here and for world-map fast travel) - unlike
+## shoreline_camp, this area has only one neighbor, so its canonical entry
+## cell and its specific arrival-from-shoreline-camp cell are the same
+## value with no separate local constant needed.
+const GANGPLANK_X := 8
+const GANGPLANK_START_Y := 7
+const RETURN_TO_SHORELINE_CELL := Vector2i(GANGPLANK_X, WRECK_SIZE.y - 1)
+const ENTRY_CELL := Vector2i(GANGPLANK_X, WRECK_SIZE.y - 2)
+const DEFAULT_ENTRY_CELL := ENTRY_CELL
+
+## Must match shoreline_camp.gd's own WRECK_ENTRY_CELL - this scene's
+## coordinate space, not this one's, so it can't be resolved via
+## AreaRegistry (whose entries are each area's own arrival point, not its
+## neighbors'). Same hand-kept-in-sync-by-comment pattern as every other
+## specific area-to-area connection before AreaRegistry centralized the
+## generic fast-travel case (see that file's own note on why this is fine).
+const SHORELINE_CAMP_ENTRY_CELL := Vector2i(10, 1)
+
+@onready var _ground: TileMapLayer = $Ground
+@onready var _player: Node2D = $Player
+@onready var _dialogue: DialogueBox = $UI/DialogueBox
+@onready var _inventory_ui: InventoryUI = $UI/InventoryUI
+@onready var _journal_ui: JournalUI = $UI/JournalUI
+@onready var _world_map_ui: WorldMapUI = $UI/WorldMapUI
+@onready var _cutscene: CutscenePlayer = $CutscenePlayer
+@onready var _hint: Label = $UI/Hint
+
+var _occupied_cells: Dictionary = {}
+var _interact_was_pressed := false
+var _inventory_key_was_pressed := false
+var _journal_key_was_pressed := false
+var _map_key_was_pressed := false
+var _tileset_source_id: int = -1
+
+
+func _ready() -> void:
+	_hint.add_theme_font_size_override("font_size", Settings.scaled_font_size())
+
+	if SaveSystem.pending_load:
+		SaveSystem.pending_load = false
+		var loaded := SaveSystem.load_game()
+		if loaded.has("flags") and loaded["flags"] is Dictionary:
+			WorldState.from_dict(loaded["flags"])
+		if loaded.has("inventory") and loaded["inventory"] is Dictionary:
+			Inventory.from_dict(loaded["inventory"])
+		if loaded.has("world_map") and loaded["world_map"] is Dictionary:
+			WorldMap.from_dict(loaded["world_map"])
+
+	_tileset_source_id = _build_tileset()
+	_build_map(_tileset_source_id)
+
+	var start := _resolve_start_position(SaveSystem.load_game())
+	_player.initialize(_ground, start, TILE_SIZE, WRECK_SIZE, _occupied_cells)
+	_player.moved.connect(_on_player_moved)
+	WorldState.flag_changed.connect(_on_flag_changed)
+	_world_map_ui.travel_requested.connect(_on_travel_requested)
+
+	if not WorldMap.is_visited(AREA_ID):
+		WorldMap.mark_visited(AREA_ID)
+		_save_state()
+
+	_cutscene.initialize(_dialogue, _player.get_camera(), _player, [_inventory_ui, _journal_ui, _world_map_ui])
+
+	_update_hint()
+
+
+func _grid_to_world(cell: Vector2i) -> Vector2:
+	return Vector2(cell.x * TILE_SIZE + TILE_SIZE / 2.0, cell.y * TILE_SIZE + TILE_SIZE)
+
+
+func _resolve_start_position(data: Dictionary) -> Vector2i:
+	if not (data.has("player_x") and data.has("player_y")):
+		return DEFAULT_ENTRY_CELL
+	if not ((data["player_x"] is int or data["player_x"] is float) and (data["player_y"] is int or data["player_y"] is float)):
+		return DEFAULT_ENTRY_CELL
+
+	var loaded := Vector2i(int(data["player_x"]), int(data["player_y"]))
+	if loaded.x < 0 or loaded.y < 0 or loaded.x >= WRECK_SIZE.x or loaded.y >= WRECK_SIZE.y:
+		return DEFAULT_ENTRY_CELL
+	var tile_data := _ground.get_cell_tile_data(loaded)
+	if tile_data == null or tile_data.get_custom_data("blocked"):
+		return DEFAULT_ENTRY_CELL
+	return loaded
+
+
+func _on_player_moved(grid_pos: Vector2i) -> void:
+	if grid_pos == RETURN_TO_SHORELINE_CELL:
+		_transition_to(AreaRegistry.get_area(AreaRegistry.SHORELINE_CAMP)["scene_path"], SHORELINE_CAMP_ENTRY_CELL)
+		return
+	_save_state()
+
+
+func _on_flag_changed(_flag: String, _value: Variant) -> void:
+	_update_hint()
+	_save_state()
+
+
+func _update_hint() -> void:
+	_hint.text = "%s\n%s" % [Settings.controls_hint_text(), QuestLog.get_current_objective()]
+
+
+func _save_state() -> void:
+	var data := SaveSystem.load_game()
+	data["player_x"] = _player.get_grid_pos().x
+	data["player_y"] = _player.get_grid_pos().y
+	data["flags"] = WorldState.to_dict()
+	data["inventory"] = Inventory.to_dict()
+	data["world_map"] = WorldMap.to_dict()
+	data["current_scene"] = scene_file_path
+	SaveSystem.save_game(data)
+
+
+func _transition_to(target_scene: String, entry_cell: Vector2i) -> void:
+	var data := SaveSystem.load_game()
+	data["player_x"] = entry_cell.x
+	data["player_y"] = entry_cell.y
+	data["flags"] = WorldState.to_dict()
+	data["inventory"] = Inventory.to_dict()
+	data["world_map"] = WorldMap.to_dict()
+	data["current_scene"] = target_scene
+	SaveSystem.save_game(data)
+	SaveSystem.pending_load = true
+	get_tree().change_scene_to_file(target_scene)
+
+
+func _transition_to_area(area_id: String) -> void:
+	var area := AreaRegistry.get_area(area_id)
+	_transition_to(area["scene_path"], area["entry_cell"])
+
+
+func _on_travel_requested(area_id: String) -> void:
+	_transition_to_area(area_id)
+
+
+func _process(_delta: float) -> void:
+	_process_interact()
+	_process_inventory_toggle()
+	_process_journal_toggle()
+	_process_map_toggle()
+
+
+func _process_interact() -> void:
+	var interact_pressed := Input.is_action_pressed("interact")
+	var just_pressed := interact_pressed and not _interact_was_pressed
+	_interact_was_pressed = interact_pressed
+	if not just_pressed or _inventory_ui.is_open() or _journal_ui.is_open() or _world_map_ui.is_open():
+		return
+
+	if _cutscene.is_playing():
+		_cutscene.advance()
+		return
+
+	if _dialogue.is_open():
+		_dialogue.close()
+		_player.set_input_enabled(true)
+		return
+
+
+func _process_inventory_toggle() -> void:
+	var inventory_key_pressed := Input.is_action_pressed("toggle_inventory")
+	var just_pressed := inventory_key_pressed and not _inventory_key_was_pressed
+	_inventory_key_was_pressed = inventory_key_pressed
+	if not just_pressed or _dialogue.is_open() or _journal_ui.is_open() or _world_map_ui.is_open() or _cutscene.is_playing():
+		return
+
+	if _inventory_ui.is_open():
+		_inventory_ui.close()
+		_player.set_input_enabled(true)
+		return
+
+	if _player.is_moving():
+		return
+
+	_inventory_ui.open()
+	_player.set_input_enabled(false)
+
+
+func _process_journal_toggle() -> void:
+	var journal_key_pressed := Input.is_action_pressed("toggle_journal")
+	var just_pressed := journal_key_pressed and not _journal_key_was_pressed
+	_journal_key_was_pressed = journal_key_pressed
+	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _world_map_ui.is_open() or _cutscene.is_playing():
+		return
+
+	if _journal_ui.is_open():
+		_journal_ui.close()
+		_player.set_input_enabled(true)
+		return
+
+	if _player.is_moving():
+		return
+
+	_journal_ui.open()
+	_player.set_input_enabled(false)
+
+
+func _process_map_toggle() -> void:
+	var map_key_pressed := Input.is_action_pressed("toggle_map")
+	var just_pressed := map_key_pressed and not _map_key_was_pressed
+	_map_key_was_pressed = map_key_pressed
+	if not just_pressed or _dialogue.is_open() or _inventory_ui.is_open() or _journal_ui.is_open() or _cutscene.is_playing():
+		return
+
+	if _world_map_ui.is_open():
+		_world_map_ui.close()
+		_player.set_input_enabled(true)
+		return
+
+	if _player.is_moving():
+		return
+
+	_world_map_ui.open(AREA_ID)
+	_player.set_input_enabled(false)
+
+
+func _build_tileset() -> int:
+	var tile_set := TileSet.new()
+	tile_set.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
+
+	var atlas := TileSetAtlasSource.new()
+	atlas.texture = load("res://assets/tiles/overworld_tileset.png")
+	atlas.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
+	for x in range(8):
+		atlas.create_tile(Vector2i(x, 0))
+
+	tile_set.add_custom_data_layer()
+	tile_set.set_custom_data_layer_name(0, "blocked")
+	tile_set.set_custom_data_layer_type(0, TYPE_BOOL)
+
+	var source_id := tile_set.add_source(atlas)
+	for x in [TILE_WATER, TILE_WALL, TILE_ROOF]:
+		atlas.get_tile_data(Vector2i(x, 0), 0).set_custom_data("blocked", true)
+
+	_ground.tile_set = tile_set
+	return source_id
+
+
+func _build_map(source_id: int) -> void:
+	for y in range(WRECK_SIZE.y):
+		for x in range(WRECK_SIZE.x):
+			var cell := Vector2i(x, y)
+			_ground.set_cell(cell, source_id, Vector2i(_tile_for(cell), 0))
+
+
+## Same priority reasoning as ship.gd's _tile_for(): the gangplank check
+## comes first so it can punch through the hull's south wall in one
+## uniform column; BREACH is checked before HULL so it can override one
+## section of the hull's own wall to open water instead.
+func _tile_for(cell: Vector2i) -> int:
+	if cell.x == GANGPLANK_X and cell.y >= GANGPLANK_START_Y:
+		return TILE_PATH
+	if SHELTER.has_point(cell):
+		return TILE_ROOF
+	if BREACH.has_point(cell):
+		return TILE_WATER
+	if DECK.has_point(cell):
+		return TILE_PATH
+	if HULL.has_point(cell):
+		return TILE_WALL
+	return TILE_WATER

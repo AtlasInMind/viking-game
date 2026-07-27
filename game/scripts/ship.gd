@@ -35,14 +35,25 @@ const SHELTER := Rect2i(5, 3, 2, 1)
 ## for the full reasoning.
 const AREA_ID := AreaRegistry.SHIP
 
-## The one way on/off the ship: a gap in the hull's south wall (row 6)
-## continuing south as a gangplank across open water down to the return
-## trigger. The village's scene/entry cell now resolve through AreaRegistry
-## (issue #30) instead of a locally-hardcoded VILLAGE_ENTRY_CELL - see that
-## file for why.
+## The one way on/off the ship toward the village: a gap in the hull's
+## south wall (row 6) continuing south as a gangplank across open water
+## down to the return trigger. The village's scene/entry cell now resolve
+## through AreaRegistry (issue #30) instead of a locally-hardcoded
+## VILLAGE_ENTRY_CELL - see that file for why.
 const GANGPLANK_X := 8
 const GANGPLANK_START_Y := 6
 const RETURN_TO_VILLAGE_CELL := Vector2i(GANGPLANK_X, SHIP_SIZE.y - 1)
+
+## A second gap, symmetric on the hull's north wall (bow), leading onward
+## to the shoreline camp (issue #35/#37's Act 2 journey) rather than back
+## to the village - the same ship, sailing on rather than turning back.
+## Same column as GANGPLANK_X deliberately, for a single clean line running
+## bow-to-stern rather than two unrelated cuts. Arriving back here (from
+## the shoreline camp) reuses AreaRegistry.SHIP's own canonical entry cell,
+## same as arriving from the village - a short in-ship walk to whichever
+## gangplank you want next is a fine trade for not needing a second,
+## direction-specific arrival cell on a deck this small.
+const TRANSITION_TO_SHORELINE_CELL := Vector2i(GANGPLANK_X, 0)
 
 ## Must match AreaRegistry.SHIP's entry_cell - this is where the player
 ## lands when arriving from the village. It's also this scene's own
@@ -175,6 +186,9 @@ func _resolve_start_position(data: Dictionary) -> Vector2i:
 func _on_player_moved(grid_pos: Vector2i) -> void:
 	if grid_pos == RETURN_TO_VILLAGE_CELL:
 		_transition_to_area(AreaRegistry.VILLAGE)
+		return
+	if grid_pos == TRANSITION_TO_SHORELINE_CELL:
+		_transition_to_area(AreaRegistry.SHORELINE_CAMP)
 		return
 	_save_state()
 
@@ -389,11 +403,14 @@ func _build_map(source_id: int) -> void:
 
 
 ## Deliberate placements: DECK (walkable interior) is checked before HULL
-## (its border) since DECK is inset by one cell on every side, and the
-## gangplank check comes first so it can punch through both the hull's
-## south wall and the open water beyond it in one uniform column.
+## (its border) since DECK is inset by one cell on every side, and both
+## gangplank checks come first so they can punch through the hull's walls
+## (and the open water beyond, south side only - the north cut ends at the
+## scene's own edge, row 0) in one uniform column each.
 func _tile_for(cell: Vector2i) -> int:
 	if cell.x == GANGPLANK_X and cell.y >= GANGPLANK_START_Y:
+		return TILE_PATH
+	if cell.x == GANGPLANK_X and cell.y <= 1:
 		return TILE_PATH
 	if SHELTER.has_point(cell):
 		return TILE_ROOF
