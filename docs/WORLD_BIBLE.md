@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The actual setting, Act 1 story, and cast for this project — the specifics `docs/PROJECT_VISION.md` deliberately left open ("What's not decided yet") until this milestone. Decided directly with the user per issue #16, not invented unilaterally; see `docs/DECISIONS.md` for the decision record. Everything here is Act-1-scoped unless marked otherwise — the wider mystery is expected to unfold across later content acts (M5), not resolve entirely in this first demo.
+The actual setting, Act 1 story, and cast for this project — the specifics `docs/PROJECT_VISION.md` deliberately left open ("What's not decided yet") until this milestone. Decided directly with the user per issue #16, not invented unilaterally; see `docs/DECISIONS.md` for the decision record. Everything here is Act-1-scoped unless marked otherwise — the wider mystery is expected to unfold across later content acts (M5), not resolve entirely in this first demo. Act 2's setting/story/cast (below) was decided the same way, directly with the user, per issue #34.
 
 ## Setting
 
@@ -21,6 +21,18 @@ The player — a resident of the settlement, close enough to the situation to pl
 
 Gradually, this reveals that the crew found another abandoned longship partway through the voyage, and that something fractured the expedition on the way home — not necessarily violence, not necessarily anything supernatural, and Act 1 does not resolve which. The central question deliberately shifts over the course of the act, from **"where did the crew go"** to **"why were they afraid to come home."** Whatever actually happened stays exactly as ambiguous as the rest of this project's folklore/myth content is designed to be (`docs/PROJECT_VISION.md` design pillar 3) — belief, dread, and half-answers, never a confirmed monster or a confirmed mundane explanation. Act 1's ending should land on a real, satisfying revelation (the abandoned ship, the shape of what fractured the crew) without claiming to have the final answer — that's material for later acts, not a plot hole.
 
+## Act 2: "The Second Ship"
+
+Picks up directly from Act 1's ending rather than starting a new, unrelated mystery — the abandoned longship the crew found mid-voyage (Act 1's own revelation, never explored on-screen) is now the destination, not just a line of dialogue. Village pressure (Thora, Steinar, and Solveig all still wanting real answers) plus Hakon's own memory continuing to surface pushes toward actually going to find it. Gunnar, already established as the trader with sea knowledge, arranges passage. Hakon insists on coming along — physical proximity to where it happened is what continues to surface his memory, not distance from it.
+
+The journey has two stops, in order:
+1. **The shoreline camp** — where Hakon's own crew (the 22 who didn't return) made landfall and camped before finding the second ship. A hastily-abandoned camp: cold fire pits, gear left mid-use, and personal effects/carvings belonging to specific missing crew members — this is where a piece of Thora's son or another named-but-absent crewmate's belongings can surface, giving Act 1's grieving cast a real, concrete find rather than the story only ever engaging with the *survivor's* side of things. The traces here should read as urgency/fear, not violence — whatever happened, this crew broke camp in a hurry.
+2. **The second ship's wreck** — a *different, older, unrelated* wreck: its own unknown crew, a separate disappearance, found by Hakon's crew mid-voyage. Their personal effects are present and neatly arranged — no bodies, no scattered/looted mess, no clear sign of a struggle. This is the story's central image for Act 2: an eerie, unexplained parallel to what will eventually happen to Hakon's own crew, discovered by them just before it happens to them too. It is never suggested that the two disappearances are literally the same phenomenon, only that finding this is very plausibly *what frightened Hakon's crew in the first place* — seeing an unexplained vanishing that looks exactly like an orderly, deliberate departure, with nowhere for that dread to go but home.
+
+This deliberately does **not** resolve what fractured either crew — per the mythic-edges stance (`docs/PROJECT_VISION.md` design pillar 3), Act 2 deepens the dread with a real, concrete discovery (the second ship is real, the parallel is real) rather than explaining it away. The central question stays exactly where Act 1 left it, now with more weight behind it, not "solved."
+
+Reuses the challenge-layer mechanic (`game/scripts/cairn_encounter.gd`'s "hold still" pattern, already reused once for Act 1's ship) for a beat at the second ship itself: another fragment of Hakon's memory surfacing, framed as recognition rather than a new symptom — he's seen this before, days before he lost the rest of his memory.
+
 ## Cast
 
 - **Hakon** — the sole survivor. Physically recovering, mentally fogged past the first night of the voyage. Not a mystery box to be "solved" and discarded — he's a person genuinely trying to remember, frightened by the gaps, and not lying about what he believes to be true.
@@ -32,22 +44,26 @@ Gradually, this reveals that the crew found another abandoned longship partway t
 
 Six named cast plus Hakon-as-central-figure is deliberately a *small* cast, matching `docs/PROJECT_VISION.md`'s design intent. Issue #20 placed all six in Act 1 rather than holding any back - the cast is small enough, and each person's placement (Hakon and Thora near the house he recovers in, Steinar near his family's house, Solveig and Ingrid near the crossroads, Gunnar on the ship itself examining the recovered cargo) gave every one of them a concrete reason to be exactly where they are, rather than needing to defer some to a later act for lack of a place to put them.
 
+**Act 2** deliberately introduces no new living NPC - the second ship's own crew are long gone, and their story is told through objects/environment, not a person who explains them (keeping the "never a confirmed monster, never a confirmed mundane explanation" discipline intact; a new witness who could plausibly *know* what happened would undercut that). Existing cast carries Act 2 instead: **Hakon** travels along and continues recovering memory in proximity to where it happened; **Gunnar** arranges and provides the boat, the natural extension of his established trader/sea-knowledge role. **Thora**, **Steinar**, **Ingrid**, and **Solveig** stay in the settlement but get a coda reacting to whatever's recovered from the shoreline camp (a piece of Thora's son's, Ingrid's betrothed's, or another absent crewmate's effects) once the player returns - their arcs continue without needing to physically travel. Ingrid in particular is a natural fit for this: she already holds private knowledge nobody else does, and a personal effect surfacing from the camp is exactly the kind of concrete find that knowledge should react to.
+
 ## Areas
 
-Full intended geography for this story thread (not all required for Act 1 — see `docs/PROJECT_VISION.md`'s M3 scope and issue #19 for what's actually in-scope now):
+Full intended geography for this story thread:
 
-1. **The coastal settlement** — home base. The existing M1 village map (`game/scripts/main.gd`) can likely be reflavored/adapted into this rather than rebuilt from scratch.
-2. **The longship** — the returned ship itself, explorable for physical evidence. The most natural candidate for issue #19's "second connected area," since it's the most direct extension of the inciting incident and doesn't require the wider geography to be built yet.
-3. **Islands and fishing camps** — nearby, likely boat-reachable. Later-act content unless Act 1's scope grows to need it.
-4. **Remote shoreline** — where remnants/clues from the voyage's end may surface. Later-act content.
-5. **The abandoned crew camp** — where the expedition actually made landfall on the leg of the voyage that fractured them. The story's biggest single revelation-location; likely held for a later act rather than Act 1, unless #21 (main quest) finds it necessary to reach a satisfying Act 1 ending.
+1. **The coastal settlement** — home base, built in Act 1 (`game/scripts/main.gd`).
+2. **The longship** — the returned ship, explorable for physical evidence, built in Act 1 (`game/scripts/ship.gd`).
+3. **The shoreline camp** (Act 2) — where Hakon's crew made landfall and camped before finding the second ship; this is the renamed/clarified version of what this doc previously called "the abandoned crew camp" before issue #34 (that older entry described *Hakon's own crew's* landfall, which is this location, not the wreck below). Reached from the settlement by the boat Gunnar arranges; the concrete "how do you get there" question and any further connective area-transition detail is issue #35's to settle, not fixed here.
+4. **The second ship's wreck** (Act 2) — the older, unrelated abandoned longship itself, a genuinely new location (not a renaming of anything previously in this doc), this act's biggest single revelation-location.
+5. **Islands and fishing camps** more broadly — beyond the one shoreline/wreck Act 2 actually uses, still open for a later act if M5's remaining region count needs them.
 
 ## Open / deliberately undecided
 
 - The player's exact relationship to Hakon or the missing crew.
-- What actually fractured the expedition — intentionally left ambiguous, not a placeholder for "to be decided later and then revealed"; the ambiguity is the point, consistent with this project's myth-as-belief stance.
-- A real-world-adjacent name for the settlement/region, if one turns out to be useful — if that ever gets decided, whether the chosen placement would touch a real region with Sámi history needs checking *at that point*, per the "careful, non-stereotyping treatment of Sámi history and presence if/when the setting touches that region" standard `docs/PROJECT_VISION.md` and `CLAUDE.md` both already require. The current "fictionalized composite" framing sidesteps the question for now, not resolves it.
+- What actually fractured the expedition, and what the second ship's crew's own disappearance actually was — intentionally left ambiguous, not a placeholder for "to be decided later and then revealed"; the ambiguity is the point, consistent with this project's myth-as-belief stance. Act 2 deepens both without resolving either.
+- A real-world-adjacent name for the settlement/region, if one turns out to be useful — if that ever gets decided, whether the chosen placement would touch a real region with Sámi history needs checking *at that point*, per the "careful, non-stereotyping treatment of Sámi history and presence if/when the setting touches that region" standard `docs/PROJECT_VISION.md` and `CLAUDE.md` both already require. The current "fictionalized composite" framing sidesteps the question for now, not resolves it. Applies equally to wherever Act 2's shoreline/wreck are placed.
 
 ## Last updated
 
 2026-07-26 — initial version, following issue #16. Cast-placement question resolved (all six in Act 1), following issue #20.
+
+2026-07-27 — Act 2 ("The Second Ship") setting, story, and cast decided, following issue #34.
