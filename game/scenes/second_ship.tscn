@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/second_ship.gd" id="1_second_ship"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/world_map_ui.gd" id="7_world_map"]
 [ext_resource type="Script" path="res://scripts/cutscene_player.gd" id="8_cutscene"]
 [ext_resource type="PackedScene" path="res://scenes/touch_controls.tscn" id="9_touch_controls"]
+[ext_resource type="PackedScene" path="res://scenes/cairn_encounter.tscn" id="10_recognition_encounter"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_second_ship"]
 bg_color = Color(0.078, 0.067, 0.055, 0.94)
@@ -28,6 +29,8 @@ script = ExtResource("1_second_ship")
 [node name="Ground" type="TileMapLayer" parent="."]
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
+
+[node name="RecognitionEncounter" parent="." instance=ExtResource("10_recognition_encounter")]
 
 [node name="CutscenePlayer" type="Node" parent="."]
 script = ExtResource("8_cutscene")

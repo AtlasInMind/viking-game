@@ -10,9 +10,13 @@ extends Node2D
 ## open to water) is the one structural difference, reading as damage/decay
 ## without needing new tile assets. Geography and transitions built by issue
 ## #35 (a dead end beyond this - Act 2 doesn't need a third new area);
-## Hakon's placement/dialogue (see NPC_PLACEMENTS) added by issue #36. Full
-## main-quest wiring (flags, the memory-encounter recognition beat, gating)
-## is issue #37's job, still to come.
+## Hakon's placement/dialogue (see NPC_PLACEMENTS) added by issue #36.
+## Main-quest wiring added by issue #37: RecognitionEncounter reuses the
+## exact "hold still" mechanic (game/scripts/cairn_encounter.gd) ship.gd's
+## own MemoryEncounter already proved out, per docs/WORLD_BIBLE.md's Act 2
+## section ("another fragment of Hakon's memory surfacing, framed as
+## recognition... he's seen this before") - a second beat, not a second
+## mechanism.
 
 const TILE_SIZE := 16
 const WRECK_SIZE := Vector2i(16, 10)
@@ -70,11 +74,27 @@ const NPC_SCENE := preload("res://scenes/npc.tscn")
 ## about. No other NPC is placed here: per WORLD_BIBLE's Cast section, Act 2
 ## deliberately introduces no new living NPC, the wreck's own crew is long
 ## gone and stays untold through a person.
+##
+## Issue #37 adds the RECOGNITION_SURFACED-gated line: once the
+## RecognitionEncounter below actually succeeds, this line replaces the
+## foreshadowing fallback rather than repeating it forever - same
+## most-progressed-first dialogue_lines discipline as everywhere else.
 const NPC_PLACEMENTS := [
 	{"id": "hakon", "cell": Vector2i(4, 4), "facing": "side", "facing_right": true, "lines": [
+		{"flag": QuestFlags.RECOGNITION_SURFACED, "value": true, "text": "That's it. That's what I couldn't name - I stood somewhere like this before, right before everything after went quiet."},
 		{"flag": "", "text": "I've stood on a deck like this before mine went quiet. Whatever happened to this crew - I think I understood it, once, right before I stopped understanding anything at all."},
 	]},
 ]
+
+## The recognition beat (issue #37) - reuses cairn_encounter.gd's "hold
+## still" mechanic a second time (ship.gd's MemoryEncounter was the first
+## reuse), instanced as RecognitionEncounter in second_ship.tscn. Placed on
+## open deck near the wreckage pile (clear of SHELTER/Hakon/the gangplank),
+## deliberately ungated on SHORELINE_CAMP_EXPLORED or any other Act 2
+## flag - purely spatial, same reasoning as ship.gd's own MEMORY_TRIGGER_CELL
+## having no prerequisite either.
+const RECOGNITION_TRIGGER_CELL := Vector2i(10, 4)
+const RECOGNITION_PUSH_BACK_CELL := Vector2i(12, 5)
 
 @onready var _ground: TileMapLayer = $Ground
 @onready var _player: Node2D = $Player
@@ -82,6 +102,7 @@ const NPC_PLACEMENTS := [
 @onready var _inventory_ui: InventoryUI = $UI/InventoryUI
 @onready var _journal_ui: JournalUI = $UI/JournalUI
 @onready var _world_map_ui: WorldMapUI = $UI/WorldMapUI
+@onready var _recognition_encounter: Node2D = $RecognitionEncounter
 @onready var _cutscene: CutscenePlayer = $CutscenePlayer
 @onready var _hint: Label = $UI/Hint
 
@@ -121,6 +142,9 @@ func _ready() -> void:
 		WorldMap.mark_visited(AREA_ID)
 		_save_state()
 
+	_recognition_encounter.initialize(_player, RECOGNITION_TRIGGER_CELL, RECOGNITION_PUSH_BACK_CELL, WorldState.get_flag(QuestFlags.RECOGNITION_SURFACED))
+	_recognition_encounter.succeeded.connect(_on_recognition_encounter_succeeded)
+	_recognition_encounter.failed.connect(_on_recognition_encounter_failed)
 	_cutscene.initialize(_dialogue, _player.get_camera(), _player, [_inventory_ui, _journal_ui, _world_map_ui])
 
 	_update_hint()
@@ -173,6 +197,30 @@ func _update_hint() -> void:
 	_hint.text = "%s\n%s" % [Settings.controls_hint_text(), QuestLog.get_current_objective()]
 
 
+## Mirrors ship.gd's _on_memory_encounter_succeeded() - a real CutscenePlayer
+## sequence (issue #31), not a single static line, for the same reason: this
+## is Act 2's own biggest beat, framed as recognition rather than a new fear
+## (docs/WORLD_BIBLE.md's Act 2 section) - Hakon's seen this exact stillness
+## before, days before the rest of his memory went dark. Camera pans toward
+## BREACH (the gap in the west hull wall, open to the sea) rather than
+## straight up/out like ship.gd's own pan - what's being recognized here is
+## the wreck itself, not the water beyond it.
+func _on_recognition_encounter_succeeded() -> void:
+	_cutscene.play([
+		{"type": "flag", "flag": QuestFlags.RECOGNITION_SURFACED, "value": true},
+		{"type": "dialogue", "text": "This isn't new. Somewhere behind Hakon's silence, this exact stillness is already familiar - he's stood somewhere just like this before, and it's the last clear thing he remembers before the rest went dark."},
+		{"type": "camera_pan", "offset": Vector2(-32, 0), "duration": 1.2},
+		{"type": "wait", "duration": 1.0},
+		{"type": "dialogue", "text": "Whatever this ship's crew walked into, Hakon's crew found it too, close enough to call it the same shape. That's the fear he's been carrying - not distance, but recognition."},
+		{"type": "camera_pan", "offset": Vector2.ZERO, "duration": 1.0},
+	])
+
+
+func _on_recognition_encounter_failed() -> void:
+	_dialogue.open("You flinch, and the recognition slips away before you can hold it steady. Best to hold still, if you want to see it through.")
+	_player.set_input_enabled(false)
+
+
 func _save_state() -> void:
 	var data := SaveSystem.load_game()
 	data["player_x"] = _player.get_grid_pos().x
@@ -214,7 +262,12 @@ func _process(_delta: float) -> void:
 
 
 ## Mirrors shoreline_camp.gd's _process_interact() - Hakon (issue #36) is
-## the only NPC here, no quest-flag side effects yet (issue #37's job).
+## the only NPC here. Unlike shoreline_camp.gd's Hakon, talking to him here
+## has no quest-flag side effect of its own (issue #37) - RECOGNITION_SURFACED
+## is set by the RecognitionEncounter succeeding (see
+## _on_recognition_encounter_succeeded()), not by this conversation; his
+## dialogue_lines entry above only reads that flag, live, same as everywhere
+## else.
 func _process_interact() -> void:
 	var interact_pressed := Input.is_action_pressed("interact")
 	var just_pressed := interact_pressed and not _interact_was_pressed

@@ -8,8 +8,10 @@ extends Node2D
 ## (issue #9). Geography and area-to-area transitions built by issue #35;
 ## Hakon's placement/dialogue (see NPC_PLACEMENTS) added by issue #36 on top
 ## of that, using the UI shell #35 already wired so this wasn't retrofitting
-## missing infrastructure. Full main-quest wiring (flags, cutscene, gating)
-## is issue #37's job, still to come.
+## missing infrastructure. Main-quest wiring (SHORELINE_CAMP_EXPLORED, see
+## _process_interact()) added by issue #37 - no gate/cutscene beat of its
+## own here, both those live one hop over (ship.gd's NORTH_GATE getting you
+## in, second_ship.gd's recognition encounter further on).
 
 const TILE_SIZE := 16
 const SHORELINE_SIZE := Vector2i(20, 16)
@@ -203,9 +205,10 @@ func _process(_delta: float) -> void:
 	_process_map_toggle()
 
 
-## Mirrors ship.gd's _process_interact() - Hakon (issue #36) is the only
-## NPC here, no quest-flag side effects yet (that's issue #37's job, same
-## as ship.gd's Gunnar branch was added by #21 after #20 placed him).
+## Mirrors ship.gd's _process_interact(). Hakon (issue #36) is the only
+## NPC here; talking to him now sets SHORELINE_CAMP_EXPLORED (issue #37),
+## the same "the NPC branch is the quest-flag side effect" shape ship.gd's
+## Gunnar branch already established.
 func _process_interact() -> void:
 	var interact_pressed := Input.is_action_pressed("interact")
 	var just_pressed := interact_pressed and not _interact_was_pressed
@@ -230,6 +233,8 @@ func _process_interact() -> void:
 	if npc and npc.has_method("get_dialogue_text"):
 		_dialogue.open(npc.get_dialogue_text())
 		_player.set_input_enabled(false)
+		if npc == _npcs_by_id.get("hakon"):
+			WorldState.set_flag(QuestFlags.SHORELINE_CAMP_EXPLORED, true)
 
 
 func _process_inventory_toggle() -> void:

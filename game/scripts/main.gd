@@ -79,6 +79,14 @@ const NPC_PLACEMENTS := [
 		{"flag": "", "text": "Careful near the water after dark. My grandmother never let us go near it then."},
 	]},
 	{"id": "hakon", "cell": Vector2i(8, 6), "facing": "down", "lines": [
+		# Act 2's resolution beat (issue #37, mirroring ACT_ONE_RESOLVED
+		# below exactly): the RECOGNITION_SURFACED-gated line, not this one,
+		# is what actually plays on the pivotal report-back visit - get_
+		# dialogue_text() resolves before _process_interact()'s own
+		# ACT_TWO_RESOLVED set_flag() call below runs. This one only shows
+		# on a later, second visit.
+		{"flag": QuestFlags.ACT_TWO_RESOLVED, "value": true, "text": "There's nothing more that ship's going to tell us. But I know now I wasn't imagining any of it - and I don't think you doubted me either, by the end."},
+		{"flag": QuestFlags.RECOGNITION_SURFACED, "value": true, "text": "That quiet on the second ship - I knew it. Not from anywhere new. From somewhere I'd already been, and forgotten."},
 		{"flag": QuestFlags.ACT_ONE_RESOLVED, "value": true, "text": "There's a second camp out there, and beyond it another wreck - if Gunnar can get us there, I want to see it before I lose the nerve to remember."},
 		{"flag": QuestFlags.MEMORY_SURFACED, "value": true, "text": "You felt it too, then. That's why none of us wanted to come home and say it plain."},
 		{"flag": QuestFlags.MET_HAKON, "value": true, "text": "Ask Gunnar about the cargo, if you want to know I'm not imagining things. I can't tell you where we went. I wish I could."},
@@ -399,6 +407,10 @@ func _process_interact() -> void:
 			# already saves for both set_flag() calls here, no extra call needed.
 			if WorldState.get_flag(QuestFlags.MEMORY_SURFACED):
 				WorldState.set_flag(QuestFlags.ACT_ONE_RESOLVED, true)
+			# Act 2's resolution beat (issue #37) - the exact same "report
+			# back to Hakon" shape, one flag pair over.
+			if WorldState.get_flag(QuestFlags.RECOGNITION_SURFACED):
+				WorldState.set_flag(QuestFlags.ACT_TWO_RESOLVED, true)
 		elif npc == _interactables_by_id.get("carved_token_pickup"):
 			# Side content (issue #22) - optional, not required for the
 			# main quest. Idempotent (Inventory.add_item no-ops if already

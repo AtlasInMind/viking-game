@@ -8,6 +8,9 @@ extends Node2D
 ## Tiled/TileMap-editor authoring. Gunnar (issue #20) is placed here
 ## rather than in the village, examining the ship's own cargo - the one
 ## place his line about it is actually true.
+##
+## Also the one gap between the village and Act 2 (issue #37): the north
+## cut leading to the shoreline camp, past NORTH_GATE.
 
 const TILE_SIZE := 16
 const SHIP_SIZE := Vector2i(18, 9)
@@ -30,6 +33,17 @@ const DECK := Rect2i(3, 2, 12, 4)
 ## note) - just enough for the space to read as a real ship, not an
 ## empty box.
 const SHELTER := Rect2i(5, 3, 2, 1)
+
+## Act 2's own gate (issue #37) - the same GateDefinition mechanism as
+## main.gd's GATE (issue #18), reused rather than reinvented: the north cut
+## (see TRANSITION_TO_SHORELINE_CELL below) renders as a wall until Gunnar
+## has actually arranged passage, instead of always being open the moment
+## issue #35 built the geography. Flag-only (required_item_id left blank,
+## unlike GATE's rusted_key) - "arranging passage" is a conversation, not
+## an object changing hands, and inventing an item for it would be adding
+## content for its own sake rather than motivating an existing mechanism
+## narratively (see docs/DECISIONS.md's issue #21 entry on that discipline).
+const NORTH_GATE: GateDefinition = preload("res://data/gates/north_gate.tres")
 
 ## This scene's own id in AreaRegistry (issue #30) - see main.gd's AREA_ID
 ## for the full reasoning.
@@ -78,8 +92,20 @@ const NPC_SCENE := preload("res://scenes/npc.tscn")
 ## - per docs/WORLD_BIBLE.md's Cast section he arranges/provides the boat,
 ## not a fellow traveler on land the way Hakon is, and this ship deck is
 ## already the one place a line about the boat is literally true.
+## Act 2 thread continued (issue #37): talking to Gunnar again once
+## ACT_ONE_RESOLVED is true is what actually sets GUNNAR_ARRANGED_PASSAGE
+## (see _process_interact()), unlocking NORTH_GATE - so the first time this
+## conversation happens, get_dialogue_text() still resolves the
+## ACT_ONE_RESOLVED-gated line below (the flag it sets isn't live until
+## after the dialogue's already been picked), and only a *second* visit
+## shows the GUNNAR_ARRANGED_PASSAGE-gated one. Same "the pivotal line
+## reflects the state *before* this exact interaction, not after" shape
+## main.gd's Hakon branch already established for MEMORY_SURFACED/
+## ACT_ONE_RESOLVED - not a new pattern invented here.
 const NPC_PLACEMENTS := [
 	{"id": "gunnar", "cell": Vector2i(7, 4), "facing": "up", "lines": [
+		{"flag": QuestFlags.ACT_TWO_RESOLVED, "value": true, "text": "Back already, and no easier answer, I'd wager. That's how these things usually go."},
+		{"flag": QuestFlags.GUNNAR_ARRANGED_PASSAGE, "value": true, "text": "The boat's ready whenever you and Hakon are - I'll be here."},
 		{"flag": QuestFlags.ACT_ONE_RESOLVED, "value": true, "text": "I've a fix on where that landfall was, near enough. Say the word and we'll put out for it - Hakon's set on going, and I'd rather he not go alone."},
 		{"flag": "", "text": "This oil, this cloth - none of it's from anywhere I've traded. Whoever they met on that voyage, it wasn't on any route I know."},
 	]},
@@ -203,9 +229,17 @@ func _on_player_moved(grid_pos: Vector2i) -> void:
 	_save_state()
 
 
+## NORTH_GATE (issue #37) needs the same live refresh main.gd's GATE gets -
+## GUNNAR_ARRANGED_PASSAGE can become true mid-play (talking to Gunnar),
+## not just already-true at map-build time from a continued save.
 func _on_flag_changed(_flag: String, _value: Variant) -> void:
+	_refresh_gate_tile()
 	_update_hint()
 	_save_state()
+
+
+func _refresh_gate_tile() -> void:
+	_ground.set_cell(NORTH_GATE.cell, _tileset_source_id, Vector2i(_tile_for(NORTH_GATE.cell), 0))
 
 
 ## Now a thin wrapper over quest_log.gd's single shared implementation
@@ -319,6 +353,12 @@ func _process_interact() -> void:
 		_player.set_input_enabled(false)
 		if npc == _npcs_by_id.get("gunnar"):
 			WorldState.set_flag(QuestFlags.TALKED_TO_GUNNAR, true)
+			# Act 2 (issue #37): only once Act 1's actually resolved -
+			# "arranging passage" to the shoreline camp isn't a thing to
+			# offer mid-Act-1, same reasoning as water_npc's rusted_key
+			# only being offered once MET_HAKON is true.
+			if WorldState.get_flag(QuestFlags.ACT_ONE_RESOLVED):
+				WorldState.set_flag(QuestFlags.GUNNAR_ARRANGED_PASSAGE, true)
 
 
 func _process_inventory_toggle() -> void:
@@ -416,11 +456,17 @@ func _build_map(source_id: int) -> void:
 ## (its border) since DECK is inset by one cell on every side, and both
 ## gangplank checks come first so they can punch through the hull's walls
 ## (and the open water beyond, south side only - the north cut ends at the
-## scene's own edge, row 0) in one uniform column each.
+## scene's own edge, row 0) in one uniform column each. NORTH_GATE.cell
+## (row 1, the hull's own north wall) is checked before row 0 so an
+## unlocked gate renders the full two-cell cut, while a locked one blocks
+## row 1 and leaves row 0 (unreachable behind it) as inert open ground -
+## the same "wall until unlocked" shape as main.gd's south GATE.
 func _tile_for(cell: Vector2i) -> int:
 	if cell.x == GANGPLANK_X and cell.y >= GANGPLANK_START_Y:
 		return TILE_PATH
-	if cell.x == GANGPLANK_X and cell.y <= 1:
+	if cell.x == GANGPLANK_X and cell.y == NORTH_GATE.cell.y:
+		return TILE_PATH if NORTH_GATE.is_unlocked() else TILE_WALL
+	if cell.x == GANGPLANK_X and cell.y == 0:
 		return TILE_PATH
 	if SHELTER.has_point(cell):
 		return TILE_ROOF

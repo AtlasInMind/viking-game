@@ -1,7 +1,8 @@
 class_name QuestLog
 
-## Single source of truth for Act 1's main-quest progress text (issue #29) -
-## both the current-objective hint (main.gd/ship.gd's _update_hint(), a
+## Single source of truth for the main-quest progress text (issue #29,
+## extended to Act 2 by issue #37) - both the current-objective hint
+## (main.gd/ship.gd/shoreline_camp.gd/second_ship.gd's _update_hint(), a
 ## one-line call now instead of a duplicated if/elif chain) and the
 ## journal's history of completed beats (journal_ui.gd) read from the same
 ## ordered _STEPS list, instead of two separately-maintained copies of the
@@ -22,7 +23,12 @@ const GATE: GateDefinition = preload("res://data/gates/south_gate.tres")
 ## once done. "gate" steps check GATE.is_unlocked() instead of a WorldState
 ## flag directly, so a future required_flag on the gate can't silently
 ## desync the journal/hint from what's actually blocking the path (see the
-## comment on GATE.is_unlocked() itself).
+## comment on GATE.is_unlocked() itself). Act 2's own NORTH_GATE (ship.gd,
+## issue #37) doesn't need the same "gate" step type - unlike south GATE
+## (item-gated), NORTH_GATE's sole unlock condition already *is* a
+## WorldState flag (GUNNAR_ARRANGED_PASSAGE), so a plain "flag" step here
+## checks the exact same condition NORTH_GATE.is_unlocked() would, with no
+## second code path needed.
 const _STEPS := [
 	{
 		"flag": QuestFlags.MET_HAKON,
@@ -49,9 +55,29 @@ const _STEPS := [
 		"objective": "Go back and tell Hakon what you saw.",
 		"completed": "Told Hakon what surfaced on the ship. He wasn't surprised - just relieved someone else finally felt it too.",
 	},
+	{
+		"flag": QuestFlags.GUNNAR_ARRANGED_PASSAGE,
+		"objective": "Find Gunnar on the ship and see about passage to where his crew first camped.",
+		"completed": "Gunnar's arranged passage - the ship can sail on to the shoreline where the crew first made landfall.",
+	},
+	{
+		"flag": QuestFlags.SHORELINE_CAMP_EXPLORED,
+		"objective": "Head out with Gunnar and see what's left of the camp.",
+		"completed": "Explored the shoreline camp - a hastily-broken fire, gear left mid-use. Whatever happened, this crew left in a hurry.",
+	},
+	{
+		"flag": QuestFlags.RECOGNITION_SURFACED,
+		"objective": "Push on to the second ship's wreck, further north.",
+		"completed": "At the second ship's wreck, another fragment of Hakon's memory surfaced - recognition, not a new fear. He's seen this before.",
+	},
+	{
+		"flag": QuestFlags.ACT_TWO_RESOLVED,
+		"objective": "Go back and tell Hakon - and the others - what you found.",
+		"completed": "Told Hakon what surfaced at the wreck. Neither of you has an answer, only a harder question than before.",
+	},
 ]
 
-const _RESOLVED_OBJECTIVE := "For now, the rest stays buried with the ship."
+const _RESOLVED_OBJECTIVE := "For now, both ships keep their answers."
 
 ## Side content/secrets (issue #22 pattern) - each entry is visible in the
 ## journal only once its own condition is met, same "found, not hinted at"
