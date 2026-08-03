@@ -69,8 +69,18 @@ const NPC_SCENE := preload("res://scenes/npc.tscn")
 ## Gunnar stands on deck near the shelter (not inside it - no interior
 ## exists, same reasoning as main.gd's house roofs), examining the
 ## recovered cargo stored there.
+##
+## Act 2 coda (issue #36): once QuestFlags.ACT_ONE_RESOLVED is true, Gunnar
+## gets a new top-priority line about arranging passage to the shoreline
+## camp rather than repeating his Act 1 cargo line forever - same
+## ACT_ONE_RESOLVED reuse and reasoning as main.gd's NPC_PLACEMENTS coda
+## lines. Gunnar himself isn't re-placed in shoreline_camp.gd/second_ship.gd
+## - per docs/WORLD_BIBLE.md's Cast section he arranges/provides the boat,
+## not a fellow traveler on land the way Hakon is, and this ship deck is
+## already the one place a line about the boat is literally true.
 const NPC_PLACEMENTS := [
 	{"id": "gunnar", "cell": Vector2i(7, 4), "facing": "up", "lines": [
+		{"flag": QuestFlags.ACT_ONE_RESOLVED, "value": true, "text": "I've a fix on where that landfall was, near enough. Say the word and we'll put out for it - Hakon's set on going, and I'd rather he not go alone."},
 		{"flag": "", "text": "This oil, this cloth - none of it's from anywhere I've traded. Whoever they met on that voyage, it wasn't on any route I know."},
 	]},
 ]

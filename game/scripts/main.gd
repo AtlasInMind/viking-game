@@ -52,6 +52,19 @@ const NPC_SCENE := preload("res://scenes/npc.tscn")
 ## Line order matters (see QuestFlags/npc.gd) - Hakon's and water_npc's
 ## most-progressed condition is listed first so a later quest state isn't
 ## shadowed by an earlier one still being checked first.
+##
+## Act 2 coda (issue #36, see docs/WORLD_BIBLE.md's Cast section): once
+## QuestFlags.ACT_ONE_RESOLVED is true, Hakon/Thora/Steinar/Solveig each get
+## a new top-priority line about the second ship rather than repeating Act
+## 1 text forever - they're the returning cast who "stay in the settlement"
+## per WORLD_BIBLE while Hakon and Gunnar travel (placed in shoreline_camp.gd/
+## second_ship.gd/ship.gd instead). ACT_ONE_RESOLVED is reused rather than a
+## new Act-2-specific flag invented here - it's already the exact "Act 1 is
+## over" signal these lines need, and issue #37 (not this one) owns adding
+## any further Act 2 progression flags. Ingrid's is inserted after her
+## existing item-conditional line, not before it - the carved-token payoff
+## (issue #22) shouldn't be silently shadowed for a player who found it but
+## reaches this point before checking back in with her.
 const NPC_PLACEMENTS := [
 	{"id": "cairn_npc", "cell": Vector2i(PATH_X - 1, 3), "facing": "side", "lines": [
 		{"flag": "", "text": "The path north leads up toward the old cairn, if the weather holds."},
@@ -66,22 +79,27 @@ const NPC_PLACEMENTS := [
 		{"flag": "", "text": "Careful near the water after dark. My grandmother never let us go near it then."},
 	]},
 	{"id": "hakon", "cell": Vector2i(8, 6), "facing": "down", "lines": [
+		{"flag": QuestFlags.ACT_ONE_RESOLVED, "value": true, "text": "There's a second camp out there, and beyond it another wreck - if Gunnar can get us there, I want to see it before I lose the nerve to remember."},
 		{"flag": QuestFlags.MEMORY_SURFACED, "value": true, "text": "You felt it too, then. That's why none of us wanted to come home and say it plain."},
 		{"flag": QuestFlags.MET_HAKON, "value": true, "text": "Ask Gunnar about the cargo, if you want to know I'm not imagining things. I can't tell you where we went. I wish I could."},
 		{"flag": "", "text": "I keep telling them - we never left the fjord. But my hands don't believe me. Look how the salt's worked into them."},
 	]},
 	{"id": "thora", "cell": Vector2i(5, 7), "facing": "side", "facing_right": true, "lines": [
+		{"flag": QuestFlags.ACT_ONE_RESOLVED, "value": true, "text": "If there's anything of Ivar's out there, wherever he stood before it happened - bring it home, even if it's small. I'd rather hold something of his than nothing at all."},
 		{"flag": QuestFlags.MET_HAKON, "value": true, "text": "Did he say my Ivar's name? Even once?"},
 		{"flag": "", "text": "My boy rowed on that ship. Hakon lived. Go on, ask him something - anything. I can't."},
 	]},
 	{"id": "steinar", "cell": Vector2i(21, 6), "facing": "down", "lines": [
+		{"flag": QuestFlags.ACT_ONE_RESOLVED, "value": true, "text": "My brother's crew broke camp somewhere out there before they came back changed. If Hakon can point to where, maybe I can finally answer for something real instead of guessing."},
 		{"flag": "", "text": "My brother led that crew out. Now everyone wants to know why only one came back, and somehow that's mine to answer."},
 	]},
 	{"id": "solveig", "cell": Vector2i(13, 8), "facing": "side", "facing_right": true, "lines": [
+		{"flag": QuestFlags.ACT_ONE_RESOLVED, "value": true, "text": "I sent them out once already not knowing what waited. Sending Hakon back feels like tempting the same mistake twice - but I won't be the one who tells grief to wait forever for its answer."},
 		{"flag": "", "text": "I gave the order to send them out. If that was wrong, it's mine to carry, not the crew's kin."},
 	]},
 	{"id": "ingrid", "cell": Vector2i(18, 8), "facing": "side", "facing_right": false, "lines": [
 		{"item": "carved_token", "text": "That's - that's the token he was carving. He never showed me the whole of it. I didn't know he'd finished it... had he?"},
+		{"flag": QuestFlags.ACT_ONE_RESOLVED, "value": true, "text": "He never told me where they'd been, only that he was afraid to say it plain. If Hakon finds the words for it out there, I want to hear them, whatever they are."},
 		{"flag": "", "text": "He told me, the night before they left, that if the weather turned bad he'd rather we never spoke again than write me a letter I'd have to bury with him. I didn't understand it then."},
 	]},
 ]

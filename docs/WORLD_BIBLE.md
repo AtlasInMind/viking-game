@@ -46,6 +46,8 @@ Six named cast plus Hakon-as-central-figure is deliberately a *small* cast, matc
 
 **Act 2** deliberately introduces no new living NPC - the second ship's own crew are long gone, and their story is told through objects/environment, not a person who explains them (keeping the "never a confirmed monster, never a confirmed mundane explanation" discipline intact; a new witness who could plausibly *know* what happened would undercut that). Existing cast carries Act 2 instead: **Hakon** travels along and continues recovering memory in proximity to where it happened; **Gunnar** arranges and provides the boat, the natural extension of his established trader/sea-knowledge role. **Thora**, **Steinar**, **Ingrid**, and **Solveig** stay in the settlement but get a coda reacting to whatever's recovered from the shoreline camp (a piece of Thora's son's, Ingrid's betrothed's, or another absent crewmate's effects) once the player returns - their arcs continue without needing to physically travel. Ingrid in particular is a natural fit for this: she already holds private knowledge nobody else does, and a personal effect surfacing from the camp is exactly the kind of concrete find that knowledge should react to.
 
+Issue #36 placed this concretely: **Hakon** is in both `shoreline_camp.gd` (near where his crew's camp stood) and `second_ship.gd` (deck, facing the wreckage), each with its own line - the same character present wherever the player is, matching how Gunnar already works in `ship.gd`. **Gunnar** stays exactly where issue #20 put him, on the ship's deck, rather than being duplicated into the new areas - the boat he arranges *is* that ship, so a line there is already literally true without a second placement. All six Act 1 cast (Hakon, Gunnar, Thora, Steinar, Solveig, Ingrid) gained a new top-priority `dialogue_lines` entry gated on `QuestFlags.ACT_ONE_RESOLVED`, giving each an Act-2-appropriate line instead of repeating Act 1 text once that flag is true - the full "reacting to a specific recovered effect" coda described above still needs a real find/flag to react to, which is issue #37's job, not this one's.
+
 ## Areas
 
 Full intended geography for this story thread:
@@ -67,3 +69,5 @@ Full intended geography for this story thread:
 2026-07-26 — initial version, following issue #16. Cast-placement question resolved (all six in Act 1), following issue #20.
 
 2026-07-27 — Act 2 ("The Second Ship") setting, story, and cast decided, following issue #34.
+
+2026-08-03 — Act 2 cast placed and given dialogue (Hakon in `shoreline_camp.gd`/`second_ship.gd`, all six Act 1 cast gaining an `ACT_ONE_RESOLVED`-gated coda line), following issue #36.

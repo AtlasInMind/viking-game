@@ -5,10 +5,11 @@ extends Node2D
 ## landfall and camped before finding the second ship, sitting between the
 ## ship (south, reached by boat) and the second ship's wreck (north, reached
 ## on foot). Mirrors ship.gd's/main.gd's hand-authored map-building approach
-## (issue #9) - no NPCs/dialogue/cutscene content yet (issue #36/#37's job);
-## this issue is the walkable geography and the area-to-area transitions
-## only, with the full UI shell wired the same as every other area so #36
-## isn't retrofitting missing infrastructure later.
+## (issue #9). Geography and area-to-area transitions built by issue #35;
+## Hakon's placement/dialogue (see NPC_PLACEMENTS) added by issue #36 on top
+## of that, using the UI shell #35 already wired so this wasn't retrofitting
+## missing infrastructure. Full main-quest wiring (flags, cutscene, gating)
+## is issue #37's job, still to come.
 
 const TILE_SIZE := 16
 const SHORELINE_SIZE := Vector2i(20, 16)
@@ -43,6 +44,21 @@ const WRECK_ENTRY_CELL := Vector2i(LANDING_X, 1)
 ## DEFAULT_ENTRY_CELL reasoning.
 const DEFAULT_ENTRY_CELL := SHIP_ENTRY_CELL
 
+const NPC_SCENE := preload("res://scenes/npc.tscn")
+
+## Hakon (issue #36, see docs/WORLD_BIBLE.md's Cast/Act 2 sections) - he
+## "insists on coming along" and his memory keeps surfacing from physical
+## proximity to where it happened, so he's placed here rather than left
+## behind in the village. Stood off the open landing-to-wreck line (not on
+## LANDING_X or the border), roughly where a hastily-broken camp would have
+## been, facing the interior rather than either transition. Gunnar isn't
+## placed here - see ship.gd's own NPC_PLACEMENTS comment for why.
+const NPC_PLACEMENTS := [
+	{"id": "hakon", "cell": Vector2i(6, 8), "facing": "side", "facing_right": true, "lines": [
+		{"flag": "", "text": "We camped here. I remember the fire - we let it die rather than tend it, like leaving quick mattered more than staying warm."},
+	]},
+]
+
 @onready var _ground: TileMapLayer = $Ground
 @onready var _player: Node2D = $Player
 @onready var _dialogue: DialogueBox = $UI/DialogueBox
@@ -53,6 +69,7 @@ const DEFAULT_ENTRY_CELL := SHIP_ENTRY_CELL
 @onready var _hint: Label = $UI/Hint
 
 var _occupied_cells: Dictionary = {}
+var _npcs_by_id: Dictionary = {}
 var _interact_was_pressed := false
 var _inventory_key_was_pressed := false
 var _journal_key_was_pressed := false
@@ -77,6 +94,7 @@ func _ready() -> void:
 
 	_tileset_source_id = _build_tileset()
 	_build_map(_tileset_source_id)
+	_place_npcs()
 
 	var start := _resolve_start_position(SaveSystem.load_game())
 	_player.initialize(_ground, start, TILE_SIZE, SHORELINE_SIZE, _occupied_cells)
@@ -91,6 +109,18 @@ func _ready() -> void:
 	_cutscene.initialize(_dialogue, _player.get_camera(), _player, [_inventory_ui, _journal_ui, _world_map_ui])
 
 	_update_hint()
+
+
+func _place_npcs() -> void:
+	for placement in NPC_PLACEMENTS:
+		var npc := NPC_SCENE.instantiate()
+		add_child(npc)
+		npc.facing = placement["facing"]
+		npc.facing_right = placement.get("facing_right", true)
+		npc.dialogue_lines = placement["lines"]
+		npc.position = _grid_to_world(placement["cell"])
+		_occupied_cells[placement["cell"]] = npc
+		_npcs_by_id[placement["id"]] = npc
 
 
 func _grid_to_world(cell: Vector2i) -> Vector2:
@@ -173,10 +203,9 @@ func _process(_delta: float) -> void:
 	_process_map_toggle()
 
 
-## Mirrors ship.gd's _process_interact(), trimmed further still - no NPCs
-## exist here yet (issue #36), so this only handles closing dialogue/
-## advancing a cutscene, both of which stay wired for when that content
-## arrives rather than being added back in later.
+## Mirrors ship.gd's _process_interact() - Hakon (issue #36) is the only
+## NPC here, no quest-flag side effects yet (that's issue #37's job, same
+## as ship.gd's Gunnar branch was added by #21 after #20 placed him).
 func _process_interact() -> void:
 	var interact_pressed := Input.is_action_pressed("interact")
 	var just_pressed := interact_pressed and not _interact_was_pressed
@@ -192,6 +221,15 @@ func _process_interact() -> void:
 		_dialogue.close()
 		_player.set_input_enabled(true)
 		return
+
+	if _player.is_moving():
+		return
+
+	var target: Vector2i = _player.get_grid_pos() + _player.get_facing_direction()
+	var npc: Variant = _occupied_cells.get(target)
+	if npc and npc.has_method("get_dialogue_text"):
+		_dialogue.open(npc.get_dialogue_text())
+		_player.set_input_enabled(false)
 
 
 func _process_inventory_toggle() -> void:

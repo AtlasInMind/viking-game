@@ -8,10 +8,11 @@ extends Node2D
 ## vocabulary (TILE_PATH/TILE_WALL/TILE_ROOF/TILE_WATER) rather than
 ## inventing new art for this issue - a BREACH rect (a gap in the hull,
 ## open to water) is the one structural difference, reading as damage/decay
-## without needing new tile assets. No NPCs/dialogue/cutscene content yet
-## (issue #36/#37's job) - this issue is the walkable geography, reachable
-## on foot from the shoreline camp, and nothing beyond it yet (a dead end
-## for now; Act 2 doesn't need a third new area).
+## without needing new tile assets. Geography and transitions built by issue
+## #35 (a dead end beyond this - Act 2 doesn't need a third new area);
+## Hakon's placement/dialogue (see NPC_PLACEMENTS) added by issue #36. Full
+## main-quest wiring (flags, the memory-encounter recognition beat, gating)
+## is issue #37's job, still to come.
 
 const TILE_SIZE := 16
 const WRECK_SIZE := Vector2i(16, 10)
@@ -60,6 +61,21 @@ const DEFAULT_ENTRY_CELL := ENTRY_CELL
 ## generic fast-travel case (see that file's own note on why this is fine).
 const SHORELINE_CAMP_ENTRY_CELL := Vector2i(10, 1)
 
+const NPC_SCENE := preload("res://scenes/npc.tscn")
+
+## Hakon (issue #36) - travels this far too, per docs/WORLD_BIBLE.md's Act 2
+## section ("another fragment of Hakon's memory surfacing, framed as
+## recognition... he's seen this before"). Stood on deck clear of SHELTER,
+## facing east toward it - the wreckage is what the recognition line is
+## about. No other NPC is placed here: per WORLD_BIBLE's Cast section, Act 2
+## deliberately introduces no new living NPC, the wreck's own crew is long
+## gone and stays untold through a person.
+const NPC_PLACEMENTS := [
+	{"id": "hakon", "cell": Vector2i(4, 4), "facing": "side", "facing_right": true, "lines": [
+		{"flag": "", "text": "I've stood on a deck like this before mine went quiet. Whatever happened to this crew - I think I understood it, once, right before I stopped understanding anything at all."},
+	]},
+]
+
 @onready var _ground: TileMapLayer = $Ground
 @onready var _player: Node2D = $Player
 @onready var _dialogue: DialogueBox = $UI/DialogueBox
@@ -70,6 +86,7 @@ const SHORELINE_CAMP_ENTRY_CELL := Vector2i(10, 1)
 @onready var _hint: Label = $UI/Hint
 
 var _occupied_cells: Dictionary = {}
+var _npcs_by_id: Dictionary = {}
 var _interact_was_pressed := false
 var _inventory_key_was_pressed := false
 var _journal_key_was_pressed := false
@@ -92,6 +109,7 @@ func _ready() -> void:
 
 	_tileset_source_id = _build_tileset()
 	_build_map(_tileset_source_id)
+	_place_npcs()
 
 	var start := _resolve_start_position(SaveSystem.load_game())
 	_player.initialize(_ground, start, TILE_SIZE, WRECK_SIZE, _occupied_cells)
@@ -106,6 +124,18 @@ func _ready() -> void:
 	_cutscene.initialize(_dialogue, _player.get_camera(), _player, [_inventory_ui, _journal_ui, _world_map_ui])
 
 	_update_hint()
+
+
+func _place_npcs() -> void:
+	for placement in NPC_PLACEMENTS:
+		var npc := NPC_SCENE.instantiate()
+		add_child(npc)
+		npc.facing = placement["facing"]
+		npc.facing_right = placement.get("facing_right", true)
+		npc.dialogue_lines = placement["lines"]
+		npc.position = _grid_to_world(placement["cell"])
+		_occupied_cells[placement["cell"]] = npc
+		_npcs_by_id[placement["id"]] = npc
 
 
 func _grid_to_world(cell: Vector2i) -> Vector2:
@@ -183,6 +213,8 @@ func _process(_delta: float) -> void:
 	_process_map_toggle()
 
 
+## Mirrors shoreline_camp.gd's _process_interact() - Hakon (issue #36) is
+## the only NPC here, no quest-flag side effects yet (issue #37's job).
 func _process_interact() -> void:
 	var interact_pressed := Input.is_action_pressed("interact")
 	var just_pressed := interact_pressed and not _interact_was_pressed
@@ -198,6 +230,15 @@ func _process_interact() -> void:
 		_dialogue.close()
 		_player.set_input_enabled(true)
 		return
+
+	if _player.is_moving():
+		return
+
+	var target: Vector2i = _player.get_grid_pos() + _player.get_facing_direction()
+	var npc: Variant = _occupied_cells.get(target)
+	if npc and npc.has_method("get_dialogue_text"):
+		_dialogue.open(npc.get_dialogue_text())
+		_player.set_input_enabled(false)
 
 
 func _process_inventory_toggle() -> void:
